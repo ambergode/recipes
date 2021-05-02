@@ -10,12 +10,28 @@ class Recipe(models.Model):
     servings = models.IntegerField(default = 4)
     photo = models.ImageField(upload_to = "recipes/static/recipe_imgs/")
 
+    class MealChoices(models.TextChoices):
+        SNACK = "snack", _("snack")
+        MEAL = "meal", _("meal")
+        DESSERT = "dessert", _("dessert")
+    
+    snack_or_meal = models.CharField(
+        max_length = 8,
+        choices = MealChoices.choices,
+        default = MealChoices.MEAL
+    )
+
     def get_total_time(self):
         return self.cook_time + self.prep_time
     
+
     def get_steps(self):
-        steps = {}
         return Step.objects.filter(recipe = self.id)
+
+
+    def get_ingquants(self):
+        return IngQuant.objects.filter(recipe = self.id)
+
 
     def __str__(self):
         return self.name
@@ -32,7 +48,7 @@ class Step(models.Model):
 class Ingredient(models.Model):
     ingredient = models.CharField(max_length = 100)
     
-    # Nutrition data
+    # TODO Nutrition data
 
     def __str__(self):
         return self.ingredient
@@ -44,14 +60,14 @@ class IngQuant(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE)
 
     class UnitChoices(models.TextChoices):
-        GRAM = "G", _("grams")
-        OZ = "OZ", _("oz")
-        FLOZ = "FLOZ", _("fl oz")
-        CUP = "CUP", _("cup")
-        TSP = "TSP", _("tsp")
-        TBSP = "TBSP", _("tbsp")
-        ML = "ML", _("mL")
-        UNIT = "UNIT", _("unit")
+        GRAM = "gram", _("grams")
+        OZ = "oz", _("oz")
+        FLOZ = "fl oz", _("fl oz")
+        CUP = "cup", _("cup")
+        TSP = "tsp", _("tsp")
+        TBSP = "tbsp", _("tbsp")
+        ML = "ml", _("mL")
+        UNIT = "", _("")
 
 
     unit = models.CharField(
@@ -60,8 +76,12 @@ class IngQuant(models.Model):
         default = UnitChoices.GRAM
     )
 
+
     def __str__(self):
-        return str(self.ingredient) + " " + str(self.quantity) + " " + self.unit
+        unit = self.unit
+        if self.quantity != 1 and unit != "":
+            unit += "s"
+        return str(self.ingredient) + " " + str(self.quantity) + " " + unit
 
 
 

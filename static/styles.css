@@ -1,0 +1,27 @@
+.navbar-brand {
+    padding:1em;
+}
+
+.invisible_bullet {
+    list-style-type:none;
+}
+
+.recipe_description {
+    font-style:italic;
+    color:rgb(63, 63, 63);
+}
+
+li:hover {
+    background-color: rgb(239, 238, 253);
+}
+
+main {
+    margin:1em;
+}
+
+.food_category {
+    text-transform: uppercase;
+}
+.recipe_time {
+    margin:1em 0em 1em 0em;
+}

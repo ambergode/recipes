@@ -5,20 +5,40 @@
 {% endblock %}
 
 {% block main %}
-    {% if recipe_list %}
-            {% for recipe in recipe_list %}
-                <div class="card bg-dark text-white">
-                    <img src="{{ recipe.photo.url }}" class="card-img">
-                    <div class="card-img-overlay">
-                    <h5 class="card-title"><a href="{{ MEDIA_URL }}/{{ recipe.url }}">{{ recipe.name }}</a></h5>
-                    <p class="card-text">{{ recipe.description }}</p>
+    <div class="container">
+        <div class="row row-col">
+            {% if recipe_list %}
+                {% for recipe in recipe_list %}
+                    <div class=" col col-sm-6 g-2">
+                        <div class="card mb-3">
+                            <a href="{% url 'recipes:detail' recipe.id %}">
+                                <img src="{{ recipe.photo.url }}" class="card-img-top" alt="recipe photo ">
+                            </a>
+                            <div class="card-body">
+                                <div class="container">
+                                    <div class="row row-col">
+                                        <div class="col">
+                                        <a class="btn btn-primary" href="{% url 'recipes:detail' recipe.id %}">{{ recipe.name }}</a>
+                                        </div>
+                                        <div class="col">
+                                        <form name="recipe_card" action="/" method="post">
+                                            <input type="checkbox" class="btn-check" id="list-btn-check-outlined-{{recipe.name}}" autocomplete="off" onChange="this.document.getElementById('recipe_card').submit()">
+                                            <label class="btn btn-outline-primary btn-sm" for="list-btn-check-outlined-{{recipe.name}}">List</label>
+                                            <input type="checkbox" class="btn-check" id="plan-btn-check-outlined-{{recipe.name}}" autocomplete="off" onChange="this.document.getElementById('recipe_card').submit()">
+                                            <label class="btn btn-outline-primary btn-sm" for="plan-btn-check-outlined-{{recipe.name}}">Plan</label>
+                                        </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>  
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No recipes avaialbe.</p>
-    {% endif %}
+                {% endfor %}
+            {% else %}
+                <p>No recipes avaialbe.</p>
+            {% endif %}
+        </div>
+    </div>
 {% endblock %}
 
 

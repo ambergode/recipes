@@ -15,7 +15,14 @@ def index(request):
 def detail(request, recipe_id):
     recipe = get_object_or_404(Recipe, pk = recipe_id)
     steps = recipe.get_steps()
-    return render(request, 'recipes/detail.html', {'recipe': recipe, 'steps': steps})
+    ingredients = recipe.get_ingquants()
+    total = recipe.get_total_time()
+    return render(request, 'recipes/detail.html', {
+        'recipe': recipe, 
+        'steps': steps, 
+        'ingredients': ingredients,
+        'total': total,
+        })
 
 
 def edit_recipe(request, recipe_id):
@@ -25,4 +32,10 @@ def edit_recipe(request, recipe_id):
 
 def edit_ingredients(request):
     # TODO
+    return HttpResponse("TODO")
+
+def list(request):
+    return HttpResponse("TODO")
+
+def planning(request):
     return HttpResponse("TODO")
