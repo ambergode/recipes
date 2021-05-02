@@ -8,10 +8,14 @@ class Recipe(models.Model):
     prep_time = models.IntegerField()
     cook_time = models.IntegerField()
     servings = models.IntegerField(default = 4)
-    photo = models.ImageField(upload_to = "static/recipe_imgs/")
+    photo = models.ImageField(upload_to = "recipes/static/recipe_imgs/")
 
     def get_total_time(self):
         return self.cook_time + self.prep_time
+    
+    def get_steps(self):
+        steps = {}
+        return Step.objects.filter(recipe = self.id)
 
     def __str__(self):
         return self.name
