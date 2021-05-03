@@ -23,10 +23,10 @@ def log_lists(request):
             else:
                 recipe.in_planning = True
         except:
-            return HttpResponse("no submits")
+            return HttpResponse("Error in recording list selection.")
     
     recipe.save()
-    return 
+    return recipe
 
 def index(request):
     if request.method == "POST":
@@ -41,16 +41,20 @@ def index(request):
 
 
 def detail(request, recipe_id):
-    recipe = get_object_or_404(Recipe, pk = recipe_id)
-    steps = recipe.get_steps()
-    ingredients = recipe.get_ingquants()
-    total = recipe.get_total_time()
-    return render(request, 'recipes/detail.html', {
-        'recipe': recipe, 
-        'steps': steps, 
-        'ingredients': ingredients,
-        'total': total,
-        })
+    if request.method == "POST":
+        recipe = log_lists(request)
+        return HttpResponseRedirect(reverse("recipes:detail", args=(recipe.id,)))
+    else:
+        recipe = get_object_or_404(Recipe, pk = recipe_id)
+        steps = recipe.get_steps()
+        ingredients = recipe.get_ingquants()
+        total = recipe.get_total_time()
+        return render(request, 'recipes/detail.html', {
+            'recipe': recipe, 
+            'steps': steps, 
+            'ingredients': ingredients,
+            'total': total,
+            })
 
 
 def edit_recipe(request, recipe_id):
