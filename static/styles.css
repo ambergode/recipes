@@ -1,9 +1,53 @@
+.navbar {
+    background-image: url(https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Fruits_veggies.png/1024px-Fruits_veggies.png);
+    color:black;
+    font-weight:bold;
+}
+
 .navbar-brand {
-    padding:1em;
+    padding:.5em;
+    font-size: 2em;
+    font-family:Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    text-transform: uppercase;
+    color:#18096e;
+    font-weight: bolder;
+    background-color: white;
+    opacity:.85;
+}
+
+.nav-item {
+    background-color: white;
+    opacity:.65;
+    margin:.25em;
+}
+
+.nav-item:hover {
+    opacity:.9;
+}
+
+.nav-link {
+    color:black;
+}
+
+.navbar-toggler {
+    background-color:white;
+    opacity:.75
+}
+
+main {
+    margin:1em;
+}
+
+.search_bar {
+    width:100%;
 }
 
 .invisible_bullet {
     list-style-type:none;
+}
+
+li:hover {
+    background-color: rgb(239, 238, 253);
 }
 
 .recipe_description {
@@ -11,17 +55,25 @@
     color:rgb(63, 63, 63);
 }
 
-li:hover {
-    background-color: rgb(239, 238, 253);
-}
-
-main {
-    margin:1em;
-}
-
 .food_category {
     text-transform: uppercase;
 }
 .recipe_time {
     margin:1em 0em 1em 0em;
+}
+
+.recipe_image {
+    float:right;
+    margin:1em;
+    width:25vw;
+    height:auto;
+    max-height:max-content;
+}
+
+.inline {
+    display:inline;
+}
+
+.add {
+    float:right;
 }

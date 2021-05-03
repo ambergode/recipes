@@ -9,6 +9,8 @@ class Recipe(models.Model):
     cook_time = models.IntegerField()
     servings = models.IntegerField(default = 4)
     photo = models.ImageField(upload_to = "recipes/static/recipe_imgs/")
+    in_shopping = models.BooleanField(default="False")
+    in_planning = models.BooleanField(default="False")
 
     class MealChoices(models.TextChoices):
         SNACK = "snack", _("snack")
@@ -82,6 +84,4 @@ class IngQuant(models.Model):
         if self.quantity != 1 and unit != "":
             unit += "s"
         return str(self.ingredient) + " " + str(self.quantity) + " " + unit
-
-
 

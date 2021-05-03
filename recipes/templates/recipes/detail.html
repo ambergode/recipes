@@ -5,54 +5,52 @@
 {% endblock %}
 
 {% block main %}
-<div class="container g-0">
-    <div class="row g-0">
-        <div class="col g-0">
-            <h1>{{ recipe.name|title }}</h1>
-            <span class="food_category">{{ recipe.snack_or_meal|capfirst }}</span>
-            <span class="recipe_description">
-                {{ recipe.description }}
-            </span>
-            <p class="recipe_time">
-                <b>Prep:</b> {{ recipe.prep_time }} min{{ recipe.prep_time|pluralize }}
-                <b>Cook:</b> {{ recipe.cook_time }} min{{ recipe.cook_time|pluralize }}
-                <b>Total:</b> {{ total }} min{{ total|pluralize }}
-                <br>
-                <b>Servings:</b> {{ recipe.servings }} serving{{ recipe.servings|pluralize }}
-            </p>
-            <div class="ingredient_list">
-                <h5>Ingredients:</h5>
-                <ul class="invisible_bullet">
-                    {% for ingredient in ingredients %}
-                    <li>
-                        <input type="checkbox" name="ing_checkbox">
-                        <label for="ing_checkbox">    
-                            {{ ingredient.quantity|floatformat }} {{ ingredient.unit|lower }}{{ ingredient.quantity|pluralize}} {{ ingredient.ingredient }}
-                        </label>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
-        <div class="col">
-            <img class="img-fluid" src="{{ recipe.photo.url }}" alt="recipe photo">
-        </div>
-    </div>
-    <div class="row">
-        <div class="step_list">
-            <h5>Steps:</h5>
-            <ol>
-            {% for step in steps %}
-                <li>
-                    <input type="checkbox" name="step_checkbox">
-                    <label for="step_checkbox">    
-                        {{ step.step }}
-                    </label>
-                </li>
-            {% endfor %}
-            </ol>
-        </div>
-    </div>
-</div>        
+<img class="recipe_image img-fluid img-thumbnail" src="{{ recipe.photo.url }}" alt="recipe photo">
+<h1 class="inline">{{ recipe.name|title }}</h1>
+<form class="inline add" name="detail_add_list" action="{% url 'recipes:detail' recipe.id %}" method="post">
+    <input type="checkbox" class="btn-check" id="list-btn-check-outlined-{{recipe.name}}" autocomplete="off" onChange="this.document.getElementById('recipe_card').submit()">
+    <label class="btn btn-outline-primary btn-sm" for="list-btn-check-outlined-{{recipe.name}}">List</label>
+    <input type="checkbox" class="btn-check" id="plan-btn-check-outlined-{{recipe.name}}" autocomplete="off" onChange="this.document.getElementById('recipe_card').submit()">
+    <label class="btn btn-outline-primary btn-sm" for="plan-btn-check-outlined-{{recipe.name}}">Plan</label>
+</form>
+<p>
+    <span class="food_category">{{ recipe.snack_or_meal|capfirst }}</span>
+    <span class="recipe_description">
+        {{ recipe.description }}
+    </span>
+</p>
+<p class="recipe_time">
+    <b>Prep:</b> {{ recipe.prep_time }} min{{ recipe.prep_time|pluralize }}
+    <b>Cook:</b> {{ recipe.cook_time }} min{{ recipe.cook_time|pluralize }}
+    <b>Total:</b> {{ total }} min{{ total|pluralize }}
+    <br>
+    <b>Servings:</b> {{ recipe.servings }} serving{{ recipe.servings|pluralize }}
+</p>
+<div class="ingredient_list">
+    <h5>Ingredients:</h5>
+    <ul class="invisible_bullet">
+        {% for ingredient in ingredients %}
+        <li>
+            <input type="checkbox" name="ing_checkbox">
+            <label for="ing_checkbox">    
+                {{ ingredient.quantity|floatformat }} {{ ingredient.unit|lower }}{{ ingredient.quantity|pluralize}} {{ ingredient.ingredient }}
+            </label>
+        </li>
+        {% endfor %}
+    </ul>
+</div>  
+<div class="step_list">
+    <h5>Steps:</h5>
+    <ol>
+    {% for step in steps %}
+        <li>
+            <input type="checkbox" name="step_checkbox">
+            <label for="step_checkbox">    
+                {{ step.step }}
+            </label>
+        </li>
+    {% endfor %}
+    </ol>
+</div>       
 {% endblock %}
 

@@ -5,6 +5,10 @@
 {% endblock %}
 
 {% block main %}
+
+    <form action="{% url 'recipes:index' %}">
+        <input type="text" class="search_bar" placeholder="search">
+    </form>
     <div class="container">
         <div class="row row-col">
             {% if recipe_list %}
@@ -21,12 +25,33 @@
                                         <a class="btn btn-primary" href="{% url 'recipes:detail' recipe.id %}">{{ recipe.name }}</a>
                                         </div>
                                         <div class="col">
-                                        <form name="recipe_card" action="/" method="post">
-                                            <input type="checkbox" class="btn-check" id="list-btn-check-outlined-{{recipe.name}}" autocomplete="off" onChange="this.document.getElementById('recipe_card').submit()">
-                                            <label class="btn btn-outline-primary btn-sm" for="list-btn-check-outlined-{{recipe.name}}">List</label>
-                                            <input type="checkbox" class="btn-check" id="plan-btn-check-outlined-{{recipe.name}}" autocomplete="off" onChange="this.document.getElementById('recipe_card').submit()">
-                                            <label class="btn btn-outline-primary btn-sm" for="plan-btn-check-outlined-{{recipe.name}}">Plan</label>
-                                        </form>
+                                            <div class="row g-1">
+                                                <div class="col-md-auto">
+                                                    <form name="recipe_card_list" action="{% url 'recipes:index' %}" method="post">
+                                                        {% csrf_token %}
+                                                        <input name="list_toggle" type="submit" class="btn-check" id="list-{{recipe.name}}" onChange="this.document.getElementById('recipe_card').submit()">
+                                                        <input name="recipe_id" type="hidden" value={{ recipe.id }}>
+                                                        {% if recipe.in_shopping %}
+                                                            <label value="Remove from list" class="btn btn-success btn-sm g" for="list-{{recipe.name}}">list</label>
+                                                        {% else %}
+                                                            <label value="Add to list" class="btn btn-danger btn-sm g" for="list-{{recipe.name}}">list</label>
+                                                        {% endif %}
+                                                    </form>
+                                                </div>
+                                                <div class="col-md-auto">
+                                                    <form name="recipe_card_planning" action="{% url 'recipes:index' %}" method="post">
+                                                        {% csrf_token %}
+                                                        <input name="plan_toggle" type="submit" class="btn-check" id="plan-{{recipe.name}}" onChange="this.document.getElementById('recipe_card').submit()">
+                                                        <input name="recipe_id" type="hidden" value={{ recipe.id }}>
+                                                        {% if recipe.in_planning %}
+                                                            <label value="Remove from plan" class="btn btn-success btn-sm" for="plan-{{recipe.name}}">plan</label>
+                                                        {% else %}
+                                                            <label value="Add to plan" class="btn btn-danger btn-sm" for="plan-{{recipe.name}}">plan</label>
+                                                        {% endif %}
+                                                        
+                                                    </form>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
