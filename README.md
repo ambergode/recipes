@@ -7,6 +7,10 @@ Things to credit:
 favicon: 
 <div>Icons made by <a href="https://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
 
+https://openfolder.sh/django-tutorial-as-you-type-search-with-ajax for explaining ajax and a lot of code
+
+W3 schools
+
 
 
 Things to fix/change:

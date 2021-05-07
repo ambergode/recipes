@@ -1,8 +1,11 @@
 from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponse, Http404, HttpResponseRedirect
+from django.http import HttpResponse, Http404, HttpResponseRedirect, JsonResponse
 from django.template import loader
+from django.template.loader import render_to_string
 from django.urls import reverse
 import json
+from django.db.models import Q
+
 
 from .models import Recipe, Ingredient, Ingredient, Step
 from .models import VOLUME, WEIGHT, UNIT
@@ -77,8 +80,31 @@ def detail(request, recipe_id):
 
 
 def create_recipe(request):
-    # TODO
-    return render(request, 'recipes/create_recipe.html', {})
+    ctx = {}
+    url_parameter = request.GET.get("q")
+    
+    if url_parameter:
+        url_parameters = url_parameter.split()
+        args = []
+        for param in url_parameters:
+            param = param.strip(", /-")
+            args.append(Q(ingredient__icontains=param))
+        ingredients = Ingredient.objects.filter(*args)
+        ctx["ingredients"] = ingredients
+
+
+    if request.is_ajax():
+        print("request is ajax")
+        html = render_to_string(
+            template_name="recipes/ingredient_list.html", 
+            context={"ingredients": ingredients}
+        )
+
+        data_dict = {"html_from_view": html}
+
+        return JsonResponse(data=data_dict, safe=False)
+
+    return render(request, 'recipes/create_recipe.html',context = ctx)
 
 
 def edit_recipe(request, recipe_id):

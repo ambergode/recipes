@@ -1,9 +1,10 @@
-
-<li>
-    <input type="number">
+{% if ingredients %}
     <select>
-        <option>cup</option>
-        <option>tbsp</option>
+        {% for ingredient in ingredients %}
+        <option value="{{ ingredient }}">{{ ingredient }}</li>
+        {% endfor %}
     </select>
-    <input type="text" placeholder="ingredient" autocomplete = "off">
-</li>
+{% else %}
+    <p>Can't find what you're looking for? Add a new ingredient:</p>
+    <input type="text" id="name">
+{% endif %}

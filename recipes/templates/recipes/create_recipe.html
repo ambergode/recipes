@@ -26,9 +26,11 @@
     </p>
     <div class="ingredient_list">
         <h5>Ingredients:</h5>
-        <ul class="invisible_bullet" id="replaceable-content">
+        <i class="fas fa-search" id="search-icon"></i>
+        <input type="search" placeholder="Search ingredients" id="user-input" autocomplete="off">
+        <div id="replaceable-content">
             {% include 'recipes/ingredient_list.html' %}
-        </ul>
+        </div>
     </div>  
     <div class="step_list">
         <h5>Steps:</h5>
