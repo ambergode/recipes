@@ -5,51 +5,56 @@
 {% endblock %}
 
 {% block main %}
-
+<div>
     <form action="{% url 'recipes:index' %}">
-        <input type="text" class="search_bar" placeholder="search">
+        {% csrf_token %}
+        <input class="search_bar" type="text" name="q" id="q" autofocus placeholder="search" autocomplete="off">
+        <input type="submit">
     </form>
-    <div class="container">
-        <div class="row row-col">
-            {% if recipe_list %}
-                {% for recipe in recipe_list %}
-                    <div class=" col col-sm-6 g-2">
-                        <div class="card mb-3">
-                            <a href="{% url 'recipes:detail' recipe.id %}">
-                                <img src="{{ recipe.photo.url }}" class="card-img-top" alt="recipe photo ">
-                            </a>
-                            <div class="card-body">
-                                <div class="container">
-                                    <div class="row row-col">
-                                        <div class="col">
-                                        <a class="btn btn-primary" href="{% url 'recipes:detail' recipe.id %}">{{ recipe.name }}</a>
-                                        </div>
-                                        <div class="col">
-                                            <div class="row g-1">
-                                                <div class="col-md-auto">
-                                                    <form name="recipe_card_list" action="{% url 'recipes:index' %}" method="post">
-                                                        {% csrf_token %}
-                                                        <input name="list_toggle" type="submit" class="btn-check" id="list-{{recipe.name}}" onChange="this.document.getElementById('recipe_card').submit()">
-                                                        <input name="recipe_id" type="hidden" value={{ recipe.id }}>
-                                                        {% if recipe.in_shopping %}
-                                                            <label value="Remove from list" class="btn btn-success btn-sm g" for="list-{{recipe.name}}">list</label>
-                                                        {% else %}
-                                                            <label value="Add to list" class="btn btn-danger btn-sm g" for="list-{{recipe.name}}">list</label>
-                                                        {% endif %}
-                                                    </form>
-                                                </div>
-                                                <div class="col-md-auto">
-                                                    <form name="recipe_card_planning" action="{% url 'recipes:index' %}" method="post">
-                                                        {% csrf_token %}
-                                                        <input name="plan_toggle" type="submit" class="btn-check" id="plan-{{recipe.name}}" onChange="this.document.getElementById('recipe_card').submit()">
-                                                        <input name="recipe_id" type="hidden" value={{ recipe.id }}>
-                                                        {% if recipe.in_planning %}
-                                                            <label value="Remove from plan" class="btn btn-success btn-sm" for="plan-{{recipe.name}}">plan</label>
-                                                        {% else %}
-                                                            <label value="Add to plan" class="btn btn-danger btn-sm" for="plan-{{recipe.name}}">plan</label>
-                                                        {% endif %}
-                                                    </form>
-                                                </div>
+</div>
+
+<div class="container">
+    <div class="row row-col">
+        {% if recipe_list %}
+            {% for recipe in recipe_list %}
+                <div class=" col col-sm-6 g-2">
+                    <div class="card mb-3">
+                        <a href="{% url 'recipes:detail' recipe.id %}"></a>
+                            <img src="{{ recipe.photo.url }}" class="card-img-top" alt="recipe photo">
+                        </a>
+                        <div class="card-body">
+                            <div class="container">
+                                <div class="row row-col">
+                                    <div class="col">
+                                    <a class="btn btn-primary" href="{% url 'recipes:detail' recipe.id %}">{{ recipe.name|title }}</a>
+                                    </div>
+                                    <div class="col">
+                                        <div class="row g-1">
+                                            <div class="col-md-auto">
+                                                <form name="recipe_card_list" action="{% url 'recipes:index' %}" method="post">
+                                                    {% csrf_token %}
+                                                    <input name="list_toggle" type="submit" class="btn-check" id="list-{{recipe.name}}" onChange="this.document.getElementById('recipe_card').submit()">
+                                                    <input name="recipe_id" type="hidden" value="{{ recipe.id }}">
+                                                    <input name="search" type="hidden" value= "{{ q }}">
+                                                    {% if recipe.in_shopping %}
+                                                        <label value="Remove from list" class="btn btn-success btn-sm g" for="list-{{recipe.name}}">list</label>
+                                                    {% else %}
+                                                        <label value="Add to list" class="btn btn-danger btn-sm g" for="list-{{recipe.name}}">list</label>
+                                                    {% endif %}
+                                                </form>
+                                            </div>
+                                            <div class="col-md-auto">
+                                                <form name="recipe_card_planning" action="{% url 'recipes:index' %}" method="post">
+                                                    {% csrf_token %}
+                                                    <input name="plan_toggle" type="submit" class="btn-check" id="plan-{{recipe.name}}" onChange="this.document.getElementById('recipe_card').submit()">
+                                                    <input name="recipe_id" type="hidden" value="{{ recipe.id }}">
+                                                    <input name="search" type="hidden" value= "{{ q }}">
+                                                    {% if recipe.in_planning %}
+                                                        <label value="Remove from plan" class="btn btn-success btn-sm" for="plan-{{recipe.name}}">plan</label>
+                                                    {% else %}
+                                                        <label value="Add to plan" class="btn btn-danger btn-sm" for="plan-{{recipe.name}}">plan</label>
+                                                    {% endif %}
+                                                </form>
                                             </div>
                                         </div>
                                     </div>
@@ -57,12 +62,13 @@
                             </div>
                         </div>
                     </div>
-                {% endfor %}
-            {% else %}
-                <p>No recipes avaialbe.</p>
-            {% endif %}
-        </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No recipes avaialbe.</p>
+        {% endif %}
     </div>
+</div>
 {% endblock %}
 
 

@@ -1,0 +1,88 @@
+# Get all the foods and their categories:
+
+SELECT DISTINCT(food.fdc_id), food.description, food_category.description 
+FROM food
+JOIN food_category ON food_category.id = food.food_category_id
+WHERE food.data_type = "foundation_food";
+
+
+# Roma tomato: 1750354
+# apples, gala, with skin, raw: 1105781
+# banana: 1105314
+# flour: 789890
+
+
+CREATE TABLE food_nutrient(id INTEGER, fdc_id INTEGER, nutrient_id INTEGER, 
+amount REAL, data_points INTEGER, derivation_id INTEGER, min TEXT, max TEXT, 
+median TEXT, footnote TEXT, min_year_acqured TEXT);
+
+# Get all nutrients for each fdc_id
+# amount is per 100g of product
+# desired nutrients (nutrient_incoming_name.nutrient_id)
+[1093, 1079, 1292, 1004, 1003, 1008, 1293, 1005, 2033, 1258, 1253, 1257, 1063] 
+
+SELECT DISTINCT(nin.nutrient_id), nutrient.name, food_nutrient.amount, nutrient.unit_name
+FROM (food_nutrient 
+JOIN nutrient_incoming_name AS nin ON nin.nutrient_id = food_nutrient.nutrient_id)
+JOIN nutrient ON nin.nutrient_id = nutrient.id
+WHERE fdc_id = 1105781
+AND nin.nutrient_id IN (1093, 1079, 1292, 1004, 1003, 1008, 1293, 1005, 2033, 1258, 1253, 1257, 1063);
+
+
+
+SELECT DISTINCT(food.fdc_id), food.description, food_category.description,
+nutrient.name, food_nutrient.amount, nutrient.unit_name
+FROM (((food
+JOIN food_category ON food_category.id = food.food_category_id)
+JOIN food_nutrient ON food.fdc_id = food_nutrient.fdc_id)
+JOIN nutrient_incoming_name AS nin ON nin.nutrient_id = food_nutrient.nutrient_id)
+JOIN nutrient ON nin.nutrient_id = nutrient.id
+WHERE food.data_type = "foundation_food"
+AND nin.nutrient_id IN (1093, 1079, 1292, 1004, 1003, 1008, 1293, 1005, 2033, 1258, 1253, 1257, 1063);
+
+
+SELECT food_portion.amount, measure_unit.name, food_portion.gram_weight FROM food_portion
+JOIN measure_unit ON measure_unit.id = food_portion.measure_unit_id
+WHERE fdc_id = 1105314;
+
+# Monstrosity of all values:
+
+SELECT DISTINCT(food.fdc_id), food.description, food_category.description,
+nutrient.name, food_nutrient.amount, nutrient.unit_name,
+food_portion.amount, measure_unit.name, food_portion.gram_weight
+FROM (((((food
+JOIN food_category ON food_category.id = food.food_category_id)
+JOIN food_nutrient ON food.fdc_id = food_nutrient.fdc_id)
+JOIN nutrient_incoming_name AS nin ON nin.nutrient_id = food_nutrient.nutrient_id)
+JOIN nutrient ON nin.nutrient_id = nutrient.id)
+JOIN food_portion ON food_portion.fdc_id = food.fdc_id)
+JOIN measure_unit ON measure_unit.id = food_portion.measure_unit_id
+WHERE food.data_type = "foundation_food"
+AND nin.nutrient_id IN (1093, 1079, 1292, 1004, 1003, 1008, 1293, 1005, 2033, 1258, 1253, 1257, 1063);
+
+# Get fdc_id
+
+SELECT DISTINCT(fdc_id) FROM food
+WHERE food.data_type IN ("foundation_food", ;
+
+# Get name, category, nutrients, amounts, units for each food returned above
+
+SELECT DISTINCT(food.description), food_category.description FROM food
+JOIN food_category ON food_category.id = food.food_category_id
+WHERE food.fdc_id = 175294;
+
+# Get nutrient names, amounts and units
+SELECT DISTINCT(nutrient.name), food_nutrient.amount, nutrient.unit_name
+FROM ((food
+JOIN food_nutrient ON food.fdc_id = food_nutrient.fdc_id)
+JOIN nutrient_incoming_name AS nin ON nin.nutrient_id = food_nutrient.nutrient_id)
+JOIN nutrient ON nin.nutrient_id = nutrient.id
+WHERE food.fdc_id = 175294
+AND nin.nutrient_id IN (1093, 1079, 1292, 1004, 1003, 1008, 1293, 1005, 2033, 1258, 1253, 1257, 1063);
+
+# Get typical portion amount, measure unit, weight in grams
+
+SELECT DISTINCT(measure_unit.name), food_portion.amount, food_portion.gram_weight FROM food_portion
+JOIN measure_unit ON measure_unit.id = food_portion.measure_unit_id
+WHERE fdc_id = 174669 
+LIMIT 1;

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %} 
+    Edit Recipe
+{% endblock %}
+
+{% block main %}
+<form action = "/edit_recipe">
+    <input type="file" class="recipe_image img-fluid img-thumbnail" name="recipe_image">
+    <label for="recipe_image">Image</label>
+    <h1 class="inline">
+        <input type="text" name="title" autofocus placeholder="Recipe name">
+    </h1>
+    <p>
+        <span class="food_category">
+        </span>
+        <span class="recipe_description">
+        </span>
+    </p>
+    <p class="recipe_time">
+        <b>Prep:</b>
+        <b>Cook:</b>
+        <b>Total:</b>
+        <br>
+        <b>Servings:</b> 
+    </p>
+    <div class="ingredient_list">
+        <h5>Ingredients:</h5>
+        <ul class="invisible_bullet" id="replaceable-content">
+            {% include 'recipes/ingredient_list.html' %}
+        </ul>
+    </div>  
+    <div class="step_list">
+        <h5>Steps:</h5>
+        <ol>
+            <li>
+                <input type="checkbox" name="step_checkbox">
+                <label for="step_checkbox">    
+                </label>
+            </li>
+        </ol>
+    </div>       
+</form>
+{% endblock %}
+
