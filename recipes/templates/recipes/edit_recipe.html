@@ -5,48 +5,122 @@
 {% endblock %}
 
 {% block main %}
-<form action = "/edit_recipe">
-    <input type="file" class="recipe_image img-fluid img-thumbnail" name="recipe_image">
-    <label for="recipe_image">Image</label>
+<form method="post" action = "{% url 'recipes:edit_recipe' recipe_id %}" enctype="multipart/form-data" >
+    {% csrf_token %}
+    <input type="hidden" name="recipe_id" value='{{ recipe.id }}'>
+    {{ photo_form.as_p }}
+    {% if recipe.photo %}
+        <img class="recipe_image img-fluid img-thumbnail" src="{{ recipe.photo.url }}" alt="recipe photo">
+    {% endif %}
     <h1 class="inline">
-        <input type="text" name="title" autofocus placeholder="Recipe name">
+        <input type="text" name="name" value='{{ recipe.name|title }}'>
     </h1>
-    <p>
-        <span class="food_category">
-        </span>
-        <span class="recipe_description">
-        </span>
-    </p>
+    <p>{{ meal_form }}</p>
+    <p><input type="text" class="form-control" name="description" value="{{ recipe.description|capfirst }}" placeholder="A short description" autocomplete="off"></p>
     <p class="recipe_time">
-        <b>Prep:</b>
-        <b>Cook:</b>
-        <b>Total:</b>
+        {% if recipe.prep_time %}
+            <b>Prep:</b> <input type="number" name="prep" min=0 step=1 value="{{ recipe.prep_time|floatformat }}"> mins
+        {% else %}
+            <b>Prep:</b> <input type="number" name="prep" min=0 step=1 value="0"> mins
+        {% endif %}
+        {% if recipe.cook_time %}
+            <b>Cook:</b> <input type="number" name="cook" min=0 step=1 value="{{ recipe.cook_time|floatformat }}"> mins
+        {% else %}
+            <b>Cook:</b> <input type="number" name="cook" min=0 step=1 value="0"> mins
+        {% endif %}
+        <b>Total:</b> Calculated for you!
         <br>
-        <b>Servings:</b> 
+        <b>Servings:</b> <input type="number" name="servings" value="{{ recipe.servings|floatformat }}" min=0>
     </p>
     <div class="ingredient_list">
         <h5>Ingredients:</h5>
-        <ul class="invisible_bullet">
-            <li>
-                <input type="number">
-                <select>
-                    <option>cup</option>
-                    <option>tbsp</option>
-                </select>
-                <input type="text" placeholder="ingredient" autocomplete = "off">
-            </li>
-        </ul>
+        <i class="fas fa-search" id="search-icon"></i>
+        <input type="search" placeholder="Search ingredients" id="user-input" autocomplete="off">
+        <input type="hidden" id="recipe_id" value='{{ recipe.id }}'>
+        <div id="replaceable-content">
+            {% include 'recipes/ingredient_list.html' %}
+        </div>
+        <div class="selected_ingredients">
+            <ul>
+                {% for component in components %}
+                <li>
+                    <input type="number" name='quantity_{{ component.0.id }}' value = "{{ component.0.quantity|floatformat }}" class="num-input">
+                    {{ component.1 }}
+                    {{ component.0.ingredient }}
+                    <button type="button" class="btn btn-light">Remove</button>
+                    <button type="button" class="btn btn-light">Edit</button>                    
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
     </div>  
     <div class="step_list">
         <h5>Steps:</h5>
-        <ol>
-            <li>
-                <input type="checkbox" name="step_checkbox">
-                <label for="step_checkbox">    
-                </label>
-            </li>
-        </ol>
-    </div>       
+        <p>Please enter one step per box.</p>
+        <div class="form-group">
+            {% if steps %}
+                <input type="hidden" name="num_steps" id="num_steps" value="{{ step_count }}">
+                <ol id="step_list">
+                    {% for step in steps %}
+                        <li>
+                            <input type="text" name="step_{{ step.order }}" id="step_{{ step.order }}" class="form-control" value="{{ step.step }}">
+                        </li>
+                    {% endfor %}
+                        <li>
+                            <input type="text" name="step_{{ step_count }}" id="step_{{ step_count }}" class="form-control" value="">
+                        </li>
+                </ol>
+            {% else %}
+                <input type="hidden" name="num_steps" id="num_steps" value="1">
+                <ol id="step_list">
+                    <li>
+                        <input type="text" name="step_0" id="step_0" class="form-control" placeholder="Step 1">
+                    </li>
+                </ol>
+            {% endif %}
+        </div>
+    </div>
+    <script>
+        document.getElementById("step_list").onchange = function () {
+            
+            // keep track of how many steps there are and what order they go in
+            number_li = document.getElementById("step_list").children.length;
+            human_read_num = number_li + 1;
+
+            let counter = document.getElementById("num_steps");
+            counter.value = human_read_num;
+            
+            let step_name = "step_" + (number_li - 1).toString()
+            let last_input = document.getElementById(step_name);
+            console.log(step_name, last_input)
+            if (last_input != null && last_input.value != "") {
+                // create a new form input for the next step
+                li = document.createElement("li");
+                let node = document.createElement("input");
+                node.setAttribute("name", "step_" + number_li);
+                node.setAttribute("type", "text");
+                node.setAttribute("class", "full-width");
+                node.setAttribute("class", "form-control");
+                let node_name = "step_" + number_li;
+                node.setAttribute("id", node_name);
+                node.setAttribute("value", "")
+
+                // add the new input into the li and then the ul
+                li.appendChild(node);
+                var element = document.getElementById("step_list");
+                element.appendChild(li);
+
+                // autofocus into new textbox
+                document.getElementById(node_name).focus();
+            }
+        };
+    </script>    
+    <input type="submit" id="edit_recipe" value="Update Recipe">   
 </form>
+
+<div id="replaceable-content-add-ing">
+    {% include 'recipes/add_ingredient.html' %}
+</div>
+
 {% endblock %}
 

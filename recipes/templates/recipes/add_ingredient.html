@@ -1,0 +1,41 @@
+{% if searched %}
+    <div name="add_ingredint">
+        <p>Can't find what you're looking for? Add it!</p>
+        <form action="{% url 'recipes:add_ingredient' %}" id="add_ingredient" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="recipe_id" value="{{ recipe.id }}">
+            <h5><input type="text" name="ingredient_name" value='{{ search|title }}'></h5>
+            <h6>Basic information</h6>
+            <ul>
+                <li>Category: {{ category_form }}</li>
+                <li>
+                    Serving size and unit: <input type="number" name="serving_size" value='0'>
+                    {{ new_ing_unit_form }}
+                </li>
+                <li>Weight in grams per serving: <input type="number" name="weight_per_serving" value="0"></li>
+            </ul>
+            <h6>Nutrition information</h6>
+            <ul>
+                <li>Calories: <input type="number" name="calories" value="0"></li>
+                <li>Total Fat: <input type="number" name="fat" value="0"> g
+                    <ul>
+                        <li>Transfat: <input type="number" name="transfats" value="0"> g</li>
+                        <li>Saturated Fat: <input type="number" name="satfats" value="0"> g</li>
+                        <li>Monounsaturated Fat: <input type="number" name="monounsatfats" value="0"> g</li>
+                        <li>Polyunsaturated Fat:<input type="number" name="polyunsatfats" value="0"> g</li>
+                    </ul>
+                </li>
+                <li>Cholesterol: <input type="number" name="cholesterol" value="0"> mg</li>
+                <li>Sodium: <input type="number" name="sodium" value="0"> mg</li>
+                <li>Carbs: <input type="number" name="carbs" value="0"> g
+                    <ul>
+                        <li>Fiber: <input type="number" name="fiber" value="0"> g</li>
+                        <li>Sugar: <input type="number" name="sugar" value="0"> g</li>
+                    </ul>
+                </li>
+                <li>Protein: <input type="number" name="protein" value="0"> g</li>
+            </ul>
+            <input type="submit" form="add_ingredient" value="Add Ingredient">
+        </form>
+    </div>
+{% endif %}

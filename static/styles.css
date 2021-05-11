@@ -92,4 +92,8 @@ for animating blinking search icon */
     animation-iteration-count:infinite;
     animation-timing-function:ease-in-out;
     animation-direction: alternate;
-  }
+}
+
+.num-input {
+    width:7ch;
+}

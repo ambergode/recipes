@@ -1,17 +1,27 @@
 // This code primarily thanks to:
 // https://openfolder.sh/django-tutorial-as-you-type-search-with-ajax
-
 $(function(){ // this will be called when the DOM is ready
     const user_input = $("#user-input")
     const search_icon = $('#search-icon')
-    const ing_div = $('#replaceable-content')
-    const endpoint = '/recipes/createrecipe/'
+    const recipe_id = $('#recipe_id').val()
+    const endpoint = '/recipes/' + String(recipe_id) + '/edit/'
     const delay_by_in_ms = 700
     let scheduled_function = false
+    
     
     let ajax_call = function (endpoint, request_parameters) {
         $.getJSON(endpoint, request_parameters)
             .done(response => {
+                
+                const num_ingredient_options = response['number_ingredients']
+                console.log("this")
+                let ing_div = undefined
+                if (num_ingredient_options > 0) {
+                    ing_div = $('#replaceable-content')
+                } else {
+                    ing_div = $('#replaceable-content-add-ing')
+                }
+                        
                 // fade out the ing_div, then:
                 ing_div.fadeTo('fast', 0).promise().then(() => {
                     // replace the HTML contents
@@ -30,7 +40,6 @@ $(function(){ // this will be called when the DOM is ready
             q: $(this).val().toLowerCase() // value of user_input: the HTML element with ID user-input
         }
         
-
         // start animating the search icon with the CSS class
         search_icon.addClass('blink')
 

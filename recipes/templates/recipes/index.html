@@ -20,7 +20,9 @@
                 <div class=" col col-sm-6 g-2">
                     <div class="card mb-3">
                         <a href="{% url 'recipes:detail' recipe.id %}"></a>
-                            <img src="{{ recipe.photo.url }}" class="card-img-top" alt="recipe photo">
+                            {% if recipe.photo %}
+                                <img src="{{ recipe.photo.url }}" class="card-img-top" alt="recipe photo">
+                            {% endif %}
                         </a>
                         <div class="card-body">
                             <div class="container">
