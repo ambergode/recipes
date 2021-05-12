@@ -27,36 +27,20 @@
                         <div class="card-body">
                             <div class="container">
                                 <div class="row row-col">
-                                    <div class="col">
-                                    <a class="btn btn-primary" href="{% url 'recipes:detail' recipe.id %}">{{ recipe.name|title }}</a>
+                                    <div class="col-sm-auto">
+                                        <h5>
+                                            <a class="undecorated" href="{% url 'recipes:detail' recipe.id %}">{{ recipe.name|title }}</a>
+                                        </h5>
                                     </div>
                                     <div class="col">
-                                        <div class="row g-1">
-                                            <div class="col-md-auto">
-                                                <form name="recipe_card_list" action="{% url 'recipes:index' %}" method="post">
+                                        <div class="container">
+                                            <div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
+                                                <form name="edit_recipe" action="{% url 'recipes:display_edit_recipe' recipe.id %}" method="post">
                                                     {% csrf_token %}
-                                                    <input name="list_toggle" type="submit" class="btn-check" id="list-{{recipe.name}}" onChange="this.document.getElementById('recipe_card').submit()">
-                                                    <input name="recipe_id" type="hidden" value="{{ recipe.id }}">
-                                                    <input name="search" type="hidden" value= "{{ q }}">
-                                                    {% if recipe.in_shopping %}
-                                                        <label value="Remove from list" class="btn btn-success btn-sm g" for="list-{{recipe.name}}">list</label>
-                                                    {% else %}
-                                                        <label value="Add to list" class="btn btn-danger btn-sm g" for="list-{{recipe.name}}">list</label>
-                                                    {% endif %}
+                                                    <input type='submit' value="Edit" class="btn-sm btn-light">
+                                                    <input type="hidden" id="recipe_id" value="{{ recipe.id }}">
                                                 </form>
-                                            </div>
-                                            <div class="col-md-auto">
-                                                <form name="recipe_card_planning" action="{% url 'recipes:index' %}" method="post">
-                                                    {% csrf_token %}
-                                                    <input name="plan_toggle" type="submit" class="btn-check" id="plan-{{recipe.name}}" onChange="this.document.getElementById('recipe_card').submit()">
-                                                    <input name="recipe_id" type="hidden" value="{{ recipe.id }}">
-                                                    <input name="search" type="hidden" value= "{{ q }}">
-                                                    {% if recipe.in_planning %}
-                                                        <label value="Remove from plan" class="btn btn-success btn-sm" for="plan-{{recipe.name}}">plan</label>
-                                                    {% else %}
-                                                        <label value="Add to plan" class="btn btn-danger btn-sm" for="plan-{{recipe.name}}">plan</label>
-                                                    {% endif %}
-                                                </form>
+                                                {% include 'recipes/buttons.html' %}
                                             </div>
                                         </div>
                                     </div>

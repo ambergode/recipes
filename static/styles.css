@@ -97,3 +97,8 @@ for animating blinking search icon */
 .num-input {
     width:7ch;
 }
+
+.undecorated {
+    text-decoration: none;
+    color:black; 
+}

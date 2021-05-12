@@ -30,16 +30,16 @@ def convert_units(quantity, unit_from, unit_to):
         "lb": 453.592,
     }
 
-    if unit_from in volume:
-        if unit_to not in volume:
+    if unit_from in VOLUME:
+        if unit_to not in VOLUME:
             # cannot convert
             return -1
         else:
             # do conversion
             # Convert unit_from to base unit
             pass
-    elif unit_from in weight:
-        if unit_to not in weight:
+    elif unit_from in WEIGHT:
+        if unit_to not in WEIGHT:
             # cannot convert
             return -1
         else:
@@ -51,4 +51,4 @@ def convert_units(quantity, unit_from, unit_to):
     # Temperature
 
     # TODO
-    return ingquant
+    return quantity

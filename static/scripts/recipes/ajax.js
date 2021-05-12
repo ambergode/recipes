@@ -14,7 +14,6 @@ $(function(){ // this will be called when the DOM is ready
             .done(response => {
                 
                 const num_ingredient_options = response['number_ingredients']
-                console.log("this")
                 let ing_div = undefined
                 if (num_ingredient_options > 0) {
                     ing_div = $('#replaceable-content')

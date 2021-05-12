@@ -73,8 +73,6 @@ class Recipe(models.Model):
     cook_time = models.IntegerField(null = True, blank = True)
     servings = models.IntegerField(default = 4)
     photo = models.ImageField(upload_to = "recipes/", null = True, blank = True)
-    in_shopping = models.BooleanField(default="False")
-    in_planning = models.BooleanField(default="False")
     notes = models.CharField(max_length = 2048, null = True, blank = True)
     
     snack_or_meal = models.CharField(
@@ -87,7 +85,7 @@ class Recipe(models.Model):
         if self.cook_time and self.prep_time:
             return self.cook_time + self.prep_time
         else:
-            return -1
+            return '--'
     
 
     def get_steps(self):
@@ -100,6 +98,27 @@ class Recipe(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def favorite(self):
+        if Favorites.objects.filter(recipe = self).count() > 0:
+            return True
+        else:
+            return False
+
+    @property
+    def in_shopping(self):
+        if Shop.objects.filter(recipe = self).count() > 0:
+            return True
+        else:
+            return False
+
+    @property
+    def in_plan(self):
+        if Plan.objects.filter(recipe = self).count() > 0:
+            return True
+        else:
+            return False
 
 
 class Step(models.Model):
@@ -187,3 +206,21 @@ class IngQuant(models.Model):
             unit += "s"
         return str(self.ingredient) + " " + str(self.quantity) + " "
 
+class Favorites(models.Model):
+    recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE)
+
+    def __str__(self):
+        return str(self.recipe)
+
+class Shop(models.Model):
+    recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE)
+
+    def __str__(self):
+        return str(self.recipe)
+
+class Plan(models.Model):
+    recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE)
+
+    def __str__(self):
+        return str(self.recipe)
+    

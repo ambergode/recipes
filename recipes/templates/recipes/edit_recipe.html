@@ -5,6 +5,7 @@
 {% endblock %}
 
 {% block main %}
+{% include 'recipes/buttons.html' %}
 <form method="post" action = "{% url 'recipes:edit_recipe' recipe_id %}" enctype="multipart/form-data" >
     {% csrf_token %}
     <input type="hidden" name="recipe_id" value='{{ recipe.id }}'>

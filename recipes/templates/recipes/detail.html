@@ -5,52 +5,37 @@
 {% endblock %}
 
 {% block main %}
-
+    
     {% if recipe.photo %}
         <img class="recipe_image img-fluid img-thumbnail" src="{{ recipe.photo.url }}" alt="recipe photo">
     {% endif %}
-    <h1 class="inline">{{ recipe.name|title }}</h1>
-    <div class="container">
-        <div class="row g-1">
-            <div class="col-md-auto">
-                <form name="recipe_card_list" action="{% url 'recipes:detail' recipe.id %}" method="post">
-                    {% csrf_token %}
-                    <input name="list_toggle" type="submit" class="btn-check" id="list-{{recipe.name}}" onChange="this.document.getElementById('recipe_card').submit()">
-                    <input name="recipe_id" type="hidden" value={{ recipe.id }}>
-                    {% if recipe.in_shopping %}
-                        <label value="Remove from list" class="btn btn-success btn-sm g" for="list-{{recipe.name}}">list</label>
-                    {% else %}
-                        <label value="Add to list" class="btn btn-danger btn-sm g" for="list-{{recipe.name}}">list</label>
-                    {% endif %}
-                </form>
-            </div>
-            <div class="col-md-auto">
-                <form name="recipe_card_planning" action="{% url 'recipes:detail' recipe.id %}" method="post">
-                    {% csrf_token %}
-                    <input name="plan_toggle" type="submit" class="btn-check" id="plan-{{recipe.name}}" onChange="this.document.getElementById('recipe_card').submit()">
-                    <input name="recipe_id" type="hidden" value={{ recipe.id }}>
-                    {% if recipe.in_planning %}
-                        <label value="Remove from plan" class="btn btn-success btn-sm" for="plan-{{recipe.name}}">plan</label>
-                    {% else %}
-                        <label value="Add to plan" class="btn btn-danger btn-sm" for="plan-{{recipe.name}}">plan</label>
-                    {% endif %}
-                </form>
-                <form name="edit_recipe" action="{% url 'recipes:display_edit_recipe' recipe.id %}" method="post">
-                    {% csrf_token %}
-                    <input type='submit' value="Edit" class="btn btn-primary">
-                </form>
+    <div name='toolbar' class='row'>
+        <div class='col'>
+            <h1 class="inline">{{ recipe.name|title }}</h1>
+        </div>
+        <div class='col'>
+            <div class="container">
+                <div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
+                    <form name="edit_recipe" action="{% url 'recipes:display_edit_recipe' recipe.id %}" method="post">
+                        {% csrf_token %}
+                        <input type='submit' value="Edit" class="btn-sm btn-light">
+                    </form>
+                    {% include 'recipes/buttons.html' %}
+                </div>
             </div>
         </div>
     </div>
     <p>
         <span class="food_category">{{ recipe.snack_or_meal|capfirst }}</span>
-        <span class="recipe_description">
-            {{ recipe.description }}
-        </span>
+        {% if recipe.description %}
+            <span class="recipe_description">
+                {{ recipe.description }}
+            </span>
+        {% endif %}
     </p>
     <p class="recipe_time">
-        <b>Prep:</b> {{ recipe.prep_time }} min{{ recipe.prep_time|pluralize }}
-        <b>Cook:</b> {{ recipe.cook_time }} min{{ recipe.cook_time|pluralize }}
+        <b>Prep:</b> {% if recipe.prep_time %}{{ recipe.prep_time }} min{{ recipe.prep_time|pluralize }}{% else %} -- min{% endif %}
+        <b>Cook:</b> {% if recipe.cook_time %}{{ recipe.cook_time }} min{{ recipe.cook_time|pluralize }}{% else %} -- min{% endif %}
         <b>Total:</b> {{ total }} min{{ total|pluralize }}
         <br>
         <b>Servings:</b> {{ recipe.servings }} serving{{ recipe.servings|pluralize }}

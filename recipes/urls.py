@@ -12,4 +12,5 @@ urlpatterns = [
     path('mealplanning/', views.planning, name="planning"),
     path('create_recipe/', views.create_recipe, name="create_recipe"),
     path('add_ingredient/', views.add_ingredient, name="add_ingredient"),
+    path('button_ajax/', views.button_ajax, name="button_ajax")
 ]
