@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _ 
 from .convert_units import convert_units
+from django.contrib.auth.models import User
 
 from tempt.settings import MEDIA_URL
 
@@ -74,6 +75,12 @@ class Recipe(models.Model):
     servings = models.IntegerField(default = 4)
     photo = models.ImageField(upload_to = "recipes/", null = True, blank = True)
     notes = models.CharField(max_length = 2048, null = True, blank = True)
+    # as written by user
+    author = models.CharField(max_length = 150, default = "Anonymous")
+    # if others are allowed to see the recipe
+    public = models.BooleanField(default = False)
+    # The user who uploaded the recipe
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     
     snack_or_meal = models.CharField(
         max_length = 10,
@@ -99,9 +106,9 @@ class Recipe(models.Model):
     def __str__(self):
         return self.name
 
-    @property
-    def favorite(self):
-        if Favorites.objects.filter(recipe = self).count() > 0:
+    
+    def favorite(self, user_id):
+        if Favorites.objects.filter(self, user_id = user_id).count() > 0:
             return True
         else:
             return False
@@ -132,7 +139,8 @@ class Step(models.Model):
 
 class Ingredient(models.Model):
     ingredient = models.CharField(max_length = 256, unique = True)
-        
+    user = models.ForeignKey(User, on_delete= models.CASCADE, null=True, blank=True)
+
     category = models.CharField(
         max_length = 256, 
         choices = CATEGORY_CHOICES,
@@ -208,18 +216,21 @@ class IngQuant(models.Model):
 
 class Favorites(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE)
+    user = models.ForeignKey(User, on_delete = models.CASCADE)
 
     def __str__(self):
         return str(self.recipe)
 
 class Shop(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE)
+    user = models.ForeignKey(User, on_delete = models.CASCADE) 
 
     def __str__(self):
         return str(self.recipe)
 
 class Plan(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE)
+    user = models.ForeignKey(User, on_delete = models.CASCADE)
 
     def __str__(self):
         return str(self.recipe)

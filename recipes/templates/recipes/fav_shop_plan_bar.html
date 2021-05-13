@@ -1,0 +1,33 @@
+{% load recipe_extras %}
+{{ request.user.id|json_script:"user_id" }}
+<div class="btn-group" role="group" aria-label="Add, remove, and favorite icons">
+    <form id="shop_{{ recipe.id }}" name="shop" method="POST">
+        {% csrf_token %}
+        {% get_status 'shop' recipe.id request as shop_status %}
+        {% if shop_status %}
+            <button type="submit" name='sub_shop_{{ recipe.id }}' id='sub_shop_{{ recipe.id }}' class="btn shop"><i class="fas fa-store" style="color:#006300"></i></i></button>
+        {% else %}
+            <button type="submit" name='sub_shop_{{ recipe.id }}' id='sub_shop_{{ recipe.id }}' class="btn shop"><i class="fas fa-store-slash" style="color:grey"></i></button>
+        {% endif %}
+    </form>
+
+    <form id="plan_{{ recipe.id }}" name="plan" method="POST">
+        {% csrf_token %}
+        {% get_status 'plan' recipe.id request as plan_status %}
+        {% if plan_status %}
+            <button type="submit" name='sub_plan_{{ recipe.id }}' id='sub_plan_{{ recipe.id }}' class="btn plan"><i class="far fa-calendar-check" style="color:#006300"></i></button>
+        {% else %}
+            <button type="submit" name='sub_plan_{{ recipe.id }}' id='sub_plan_{{ recipe.id }}' class="btn plan"><i class="far fa-calendar-times" style="color:grey"></i></button>
+        {% endif %}
+    </form>
+
+    <form id="favt_{{ recipe.id }}" name="favorite" method="POST">
+        {% csrf_token %}
+        {% get_status 'fav' recipe.id request as fav_status %}
+        {% if fav_status %}
+            <button type="submit" name='sub_fav_{{ recipe.id }}' id='sub_fav_{{ recipe.id }}' class="btn favorite"><i class="fas fa-heart" style="color:#ab0000"></i></button>
+        {% else %}
+            <button type="submit" name='sub_fav_{{ recipe.id }}' id='sub_fav_{{ recipe.id }}' class="btn favorite"><i class="far fa-heart" style="color:grey"></i></button>
+        {% endif %}
+    </form>
+</div>

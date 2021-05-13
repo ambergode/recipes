@@ -4,6 +4,7 @@ function record_button (evt, button_type, button_recipe) {
     evt.preventDefault(); 
     const recipe_id = button_recipe;
     const endpoint = "/recipes/button_ajax/";
+    const user_id = JSON.parse(document.getElementById('user_id').textContent);
 
     let symbols_dict = {
         favorite: {
@@ -32,6 +33,7 @@ function record_button (evt, button_type, button_recipe) {
             recipe_id: recipe_id, 
             'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val(),
             tag: button_type,
+            user_id: user_id
         },
         datatype:'json',
         success: function(data) {
@@ -67,7 +69,6 @@ $(function(){ // this will be called when the DOM is ready
             button_type = "favorite";
         }
         
-        console.log(button_type)
         if (button_type != undefined) {
             forms.item(i).addEventListener("submit", function(evt){
                 record_button(evt, button_type, button_recipe);    

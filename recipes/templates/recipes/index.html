@@ -5,6 +5,16 @@
 {% endblock %}
 
 {% block main %}
+<div class='greeting'>
+    <h6>
+        {% if user.first_name %}
+            Hi, {{ user.first_name|title }}! Looking for some inspiration?
+        {% else %}
+            Looking for some inspiration? Browse the public recipes. Join to save them for later.
+        {% endif %}
+        
+    </h6>
+</div>
 <div>
     <form action="{% url 'recipes:index' %}">
         {% csrf_token %}
@@ -33,16 +43,7 @@
                                         </h5>
                                     </div>
                                     <div class="col">
-                                        <div class="container">
-                                            <div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
-                                                <form name="edit_recipe" action="{% url 'recipes:display_edit_recipe' recipe.id %}" method="post">
-                                                    {% csrf_token %}
-                                                    <input type='submit' value="Edit" class="btn-sm btn-light">
-                                                    <input type="hidden" id="recipe_id" value="{{ recipe.id }}">
-                                                </form>
-                                                {% include 'recipes/buttons.html' %}
-                                            </div>
-                                        </div>
+                                        {% include 'recipes/buttons.html' %}
                                     </div>
                                 </div>
                             </div>

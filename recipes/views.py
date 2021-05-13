@@ -5,6 +5,8 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 import json
 from django.db.models import Q
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 
 
 from .models import Recipe, Ingredient, IngQuant, Step, Favorites, Shop, Plan
@@ -14,19 +16,20 @@ from .forms import MealForm, UnitForm, CategoryForm, RecipePhotoForm
 
 
 def index(request):
-
-    if request.method == "POST":
+    if request.user.is_authenticated:
         # TODO AJAX search
-        pass
-    else:
         if request.GET.get("q") == None:
-            recipe_list = Recipe.objects.order_by('-name')
+            user = request.user
+            recipe_list = Recipe.objects.filter(user=user).order_by('-name')
         else:
-            recipe_list = Recipe.objects.filter(name__icontains=request.GET.get("q"))
+            recipe_list = Recipe.objects.filter(name__icontains=request.GET.get("q"), user=user)
+    else:
+        recipe_list = Recipe.objects.filter(public = True).order_by('-name')
 
-        return render(request, "recipes/index.html", {'recipe_list': recipe_list}) 
+    return render(request, "recipes/index.html", {'recipe_list': recipe_list, 'request': request}) 
 
 
+@login_required
 def detail(request, recipe_id):
     if request.method == "POST":
         return HttpResponseRedirect(reverse("recipes:detail", kwargs= {"recipe_id": recipe_id,}))
@@ -40,16 +43,29 @@ def detail(request, recipe_id):
             ingquantsAndUnits.append((ingquant, unit))
 
 
+        # TODO: make nutrition reflect actual recipe
+        nutrition = {
+            'calories': 100,
+            'fat': 5,
+            'satfat': 3
+        }
+        uncounted = (
+            'cookies',
+            'cakes'
+        )
+
         ctx = {
             'recipe': recipe,
             'steps': recipe.get_steps(),
             'ingredients': ingquantsAndUnits,
-            'total': recipe.get_total_time()
+            'total': recipe.get_total_time(),
+            'nutrition': nutrition,
+            'uncounted': uncounted
         }
 
         return render(request, 'recipes/detail.html', ctx)
 
-
+@login_required
 def create_recipe(request):
     if request.method == "POST":
         new_recipe = request.POST.get("recipe_name")
@@ -74,6 +90,7 @@ def create_recipe(request):
         return render(request, 'recipes/create_recipe.html', context = {})
 
 
+@login_required
 def display_edit_recipe(request, recipe_id):
     recipe = Recipe.objects.get(pk = recipe_id)
     components = []
@@ -128,6 +145,8 @@ def display_edit_recipe(request, recipe_id):
 
     return render(request, 'recipes/edit_recipe.html', context = ctx)
 
+
+@login_required
 def record_edit_recipe(request, recipe_id):
         
     recipe = Recipe.objects.get(pk = recipe_id)
@@ -139,6 +158,14 @@ def record_edit_recipe(request, recipe_id):
     recipe.cook_time = request.POST['cook']
     recipe.servings = request.POST['servings']
     photo_form = RecipePhotoForm(request.POST, request.FILES)
+    recipe.notes = request.POST['notes']
+    recipe.author = request.POST['author']
+    recipe.user = request.user
+    if request.POST['public'] == 'on':
+        recipe.public = True
+    else:
+        recipe.public = False
+
     if photo_form.is_valid():
         if photo_form.cleaned_data.get('photo') != None:
             recipe.photo = photo_form.cleaned_data.get('photo')
@@ -199,6 +226,7 @@ def record_edit_recipe(request, recipe_id):
     return HttpResponseRedirect(reverse("recipes:detail", args=(recipe.id,)))
         
 
+@login_required
 def add_ingredient(request):
 
     recipe_id = request.POST['recipe_id']
@@ -245,6 +273,7 @@ def add_ingredient(request):
     return HttpResponseRedirect(reverse("recipes:display_edit_recipe", args=(recipe_id,)))
 
 
+@login_required
 def shopping(request):
     recipes = Recipe.objects.all()
 
@@ -270,10 +299,13 @@ def shopping(request):
 
     return render(request, 'recipes/shopping.html', {"shopping_list": shopping_list})
 
+
+@login_required
 def planning(request):
     return HttpResponse("TODO")
 
 
+@login_required
 def button_ajax(request):
     data = {'success': False} 
     if request.method=='POST':
@@ -285,13 +317,16 @@ def button_ajax(request):
             'plan': Plan,
             'favorite': Favorites 
         }
+        user_id = request.POST.get('user_id')
+        user = User.objects.get(pk = user_id)
 
         model = action_dict[action]
         
-        match = model.objects.filter(recipe = recipe)
+        match = model.objects.filter(recipe = recipe, user = user)
         if match.count() == 0:
             inst = model()
             inst.recipe = recipe
+            inst.user = user
             inst.save()
             data['success'] = True
             data['action'] = "add"

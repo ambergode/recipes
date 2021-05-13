@@ -14,25 +14,29 @@
             <h1 class="inline">{{ recipe.name|title }}</h1>
         </div>
         <div class='col'>
-            <div class="container">
-                <div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
-                    <form name="edit_recipe" action="{% url 'recipes:display_edit_recipe' recipe.id %}" method="post">
-                        {% csrf_token %}
-                        <input type='submit' value="Edit" class="btn-sm btn-light">
-                    </form>
-                    {% include 'recipes/buttons.html' %}
-                </div>
-            </div>
+            {% include 'recipes/buttons.html' %}
         </div>
     </div>
-    <p>
-        <span class="food_category">{{ recipe.snack_or_meal|capfirst }}</span>
+    <div>
+        <div class='row'>
+            <div class='col-sm-auto'>
+                {{ recipe.snack_or_meal|capfirst }}
+            </div>
+            {% if recipe.author %}
+                <div class='col'>
+                    Author: {{ recipe.author }}
+                </div>
+            {% endif %}
+        </div>
+        <span class="food_category"></span>
+        
         {% if recipe.description %}
             <span class="recipe_description">
                 {{ recipe.description }}
             </span>
         {% endif %}
-    </p>
+    </div>
+    
     <p class="recipe_time">
         <b>Prep:</b> {% if recipe.prep_time %}{{ recipe.prep_time }} min{{ recipe.prep_time|pluralize }}{% else %} -- min{% endif %}
         <b>Cook:</b> {% if recipe.cook_time %}{{ recipe.cook_time }} min{{ recipe.cook_time|pluralize }}{% else %} -- min{% endif %}
@@ -53,18 +57,63 @@
             {% endfor %}
         </ul>
     </div>  
-    <div class="step_list">
-        <h5>Steps:</h5>
-        <ol>
-        {% for step in steps %}
-            <li>
-                <input type="checkbox" name="step_checkbox">
-                <label for="step_checkbox">    
-                    {{ step.step }}
-                </label>
-            </li>
-        {% endfor %}
-        </ol>
-    </div>       
+    {% if steps %}
+        <div class="step_list">
+            <h5>Steps:</h5>
+            <ol>
+            {% for step in steps %}
+                <li>
+                    <input type="checkbox" name="step_checkbox">
+                    <label for="step_checkbox">    
+                        {{ step.step }}
+                    </label>
+                </li>
+            {% endfor %}
+            </ol>
+        </div>   
+    {% endif %}  
+    {% if recipe.notes %}  
+        <div>
+            <h5>Notes:</h5>
+            <p>{{ recipe.notes }}</p>
+        </div>
+    {% endif %}
+    {% if nutrition %}
+        <div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+                            Nutrition Information
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Calories:</td>
+                        <td>{{ nutrition.calories }}</td>
+                    </tr>
+                    <tr>
+                        <td>Fat:</td>
+                        <td>{{ nutrition.fat }} g</td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sat Fat:</td>
+                        <td>{{ nutrition.satfat }} g</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th>Items not included</th>
+                    </tr>
+                    {% for item in uncounted %}
+                    <tr>
+                        <td>{{ item }}</td>
+                    </tr>
+                    {% endfor %}
+                </tfoot>
+            </table>
+        </div>
+    {% endif %}
 {% endblock %}
 

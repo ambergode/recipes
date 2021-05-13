@@ -17,7 +17,23 @@
         <input type="text" name="name" value='{{ recipe.name|title }}'>
     </h1>
     <p>{{ meal_form }}</p>
-    <p><input type="text" class="form-control" name="description" value="{{ recipe.description|capfirst }}" placeholder="A short description" autocomplete="off"></p>
+    <p>Author: 
+        {% if recipe.description %}
+            <input type='text' class='form-control' name='author' autocomplete="off" value='{{ recipe.author|capfirst }}'>
+        {% else %}
+            <input type='text' class='form-control' name='author' autocomplete="off" placeholder='Who wrote this recipe?'>
+        {% endif %}
+    </p>
+    <p>Do you want to share this recipe with the community?
+        <input type=checkbox name='public'>
+    </p>
+    <p>Description: 
+        {% if recipe.description %}
+            <input type="text" class="form-control" name="description" value="{{ recipe.description|capfirst }}" autocomplete="off">
+        {% else %}
+            <input type="text" class="form-control" name="description" placeholder="A short description" autocomplete="off">
+        {% endif %}
+        </p>
     <p class="recipe_time">
         {% if recipe.prep_time %}
             <b>Prep:</b> <input type="number" name="prep" min=0 step=1 value="{{ recipe.prep_time|floatformat }}"> mins
@@ -64,22 +80,29 @@
                 <ol id="step_list">
                     {% for step in steps %}
                         <li>
-                            <input type="text" name="step_{{ step.order }}" id="step_{{ step.order }}" class="form-control" value="{{ step.step }}">
+                            <input type="text" name="step_{{ step.order }}" id="step_{{ step.order }}" class="form-control" value="{{ step.step }}" autocomplete="off">
                         </li>
                     {% endfor %}
                         <li>
-                            <input type="text" name="step_{{ step_count }}" id="step_{{ step_count }}" class="form-control" value="">
+                            <input type="text" name="step_{{ step_count }}" id="step_{{ step_count }}" class="form-control" value="" autocomplete="off">
                         </li>
                 </ol>
             {% else %}
                 <input type="hidden" name="num_steps" id="num_steps" value="1">
                 <ol id="step_list">
                     <li>
-                        <input type="text" name="step_0" id="step_0" class="form-control" placeholder="Step 1">
+                        <input type="text" name="step_0" id="step_0" class="form-control" placeholder="Step 1" autocomplete="off">
                     </li>
                 </ol>
             {% endif %}
         </div>
+        <p>
+            {% if recipe.notes %}
+                <input type="text" class="form-control" name="notes" value="{{ recipe.note|capfirst }}" autocomplete="off">
+            {% else %}
+                <input type="text" class="form-control" name="notes" placeholder="Additonal notes" value='' autocomplete="off">
+            {% endif %}
+        </p>
     </div>
     <script>
         document.getElementById("step_list").onchange = function () {

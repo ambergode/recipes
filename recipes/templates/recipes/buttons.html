@@ -1,28 +1,12 @@
-<div class="btn-group" role="group" aria-label="Add, remove, and favorite icons">
-    <form id="shop_{{ recipe.id }}" name="shop" method="POST">
-        {% csrf_token %}
-        {% if recipe.in_shopping %}
-            <button type="submit" name='sub_shop_{{ recipe.id }}' id='sub_shop_{{ recipe.id }}' class="btn shop"><i class="fas fa-store" style="color:#006300"></i></i></button>
-        {% else %}
-            <button type="submit" name='sub_shop_{{ recipe.id }}' id='sub_shop_{{ recipe.id }}' class="btn shop"><i class="fas fa-store-slash" style="color:grey"></i></button>
-        {% endif %}
-    </form>
-
-    <form id="plan_{{ recipe.id }}" name="plan" method="POST">
-        {% csrf_token %}
-        {% if recipe.in_plan %}
-            <button type="submit" name='sub_plan_{{ recipe.id }}' id='sub_plan_{{ recipe.id }}' class="btn plan"><i class="far fa-calendar-check" style="color:#006300"></i></button>
-        {% else %}
-            <button type="submit" name='sub_plan_{{ recipe.id }}' id='sub_plan_{{ recipe.id }}' class="btn plan"><i class="far fa-calendar-times" style="color:grey"></i></button>
-        {% endif %}
-    </form>
-
-    <form id="favt_{{ recipe.id }}" name="favorite" method="POST">
-        {% csrf_token %}
-        {% if recipe.favorite %}
-            <button type="submit" name='sub_fav_{{ recipe.id }}' id='sub_fav_{{ recipe.id }}' class="btn favorite"><i class="fas fa-heart" style="color:#ab0000"></i></button>
-        {% else %}
-            <button type="submit" name='sub_fav_{{ recipe.id }}' id='sub_fav_{{ recipe.id }}' class="btn favorite"><i class="far fa-heart" style="color:grey"></i></button>
-        {% endif %}
-    </form>
-</div>
+{% if user.is_authenticated %}
+    <div class="container">
+        <div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
+            <form name="edit_recipe" action="{% url 'recipes:display_edit_recipe' recipe.id %}" method="post">
+                {% csrf_token %}
+                <input type='submit' value="Edit" class="btn-sm btn-light">
+                <input type="hidden" id="recipe_id" value="{{ recipe.id }}">
+            </form>
+            {% include 'recipes/fav_shop_plan_bar.html' %}
+        </div>
+    </div>
+{% endif %}
