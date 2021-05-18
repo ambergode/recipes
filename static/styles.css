@@ -46,10 +46,6 @@ main {
     list-style-type:none;
 }
 
-li:hover {
-    background-color: rgb(239, 238, 253);
-}
-
 .recipe_description {
     font-style:italic;
     color:rgb(63, 63, 63);
@@ -58,6 +54,7 @@ li:hover {
 .food_category {
     text-transform: uppercase;
 }
+
 .recipe_time {
     margin:1em 0em 1em 0em;
 }
@@ -94,12 +91,61 @@ for animating blinking search icon */
     animation-direction: alternate;
 }
 
-.num-input {
-    width:7ch;
-}
-
 .undecorated {
     text-decoration: none;
     color:black; 
 }
+.card {
+    display: inline-block;
+}
 
+.indented {
+    padding-left: 4ch;
+}
+
+.add_ing_card {
+    margin-left:20%;
+    padding:1em;
+}
+
+.fixed-bottom {
+    position: fixed;
+    z-index: 99;
+    padding:1em 2em 1.5em 2em;
+}
+
+.right-align {
+    float:right;
+}
+
+.title {
+    font-weight:bold;
+    font-size:2em;
+    padding:0;
+}
+
+main {
+    padding-bottom: 3em;
+}
+
+.float-right {
+    float:right;
+}
+
+.row {
+    padding-top:1em;
+}
+
+.num-input {
+    width:6ch;
+}
+
+select {
+    padding: 4px;
+    margin-right: 5px;
+    margin-left: 5px;
+}
+
+.messages {
+    background-color:red;
+}

@@ -5,17 +5,29 @@
 {% endblock %}
 
 {% block main %}
-
-<h1>Shopping List</h1>
-<ul class="invisible_bullet">
-    {% for key, value in shopping_list.items %}
-    <li>
-        <input type="checkbox" name="ing_checkbox">
-        <label for="ing_checkbox">    
-            {{ value.0|floatformat }} {{ value.1|lower }}{{ value.0|pluralize }} {{ key }} 
-        </label>
-    </li>
-    {% endfor %}
-</ul>     
-
+{% load recipe_extras %}
+    
+    <h1>Shopping List</h1>
+    {% if shopping %}
+        <div>
+            <ul class="invisible_bullet">
+                {% for category in shopping %}
+                    <h6>{{ category|title }}</h6>
+                        <ul class='invisible_bullet'>
+                            {% for ingquant in shopping|get_item:category %}
+                                <li>
+                                    <input type="checkbox" name="ing_checkbox">
+                                    <label for="ing_checkbox">    
+                                        {{ ingquant.quantity|floatformat }} {{ ingquant.get_unit_display|lower }}{{ ingquant.quantity|pluralize }} {{ ingquant.ingredient }} 
+                                    </label>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        <br>
+                {% endfor %}
+            </ul>  
+        {% else %}   
+            Nothing to see here! Go add some recipes or ingredients to your shopping lists!
+        {% endif %}
+    </div>
 {% endblock %}

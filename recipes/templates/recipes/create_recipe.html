@@ -5,17 +5,23 @@
 {% endblock %}
 
 {% block main %}
-<form action = "{% url 'recipes:create_recipe' %}" method="post">
-    {% csrf_token %}
-    <input type="text" value="{{ recipe.name }}" autocomplete="off" name = "recipe_name">
-    <input type="submit" value="Add recipe">
-</form>
 
-{% if error_message %}
-<div class="error message">
-    The recipe for <a href="{% url 'recipes:detail' recipe.id %}">{{ recipe.name }}</a> {{ error_message }}
-</div>
-{% endif %}
+    {% if error_message %}
+        <div class='row'>
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                {{ error_message }} or update <a href="{% url 'recipes:detail' recipe.id %}">{{ recipe.name }}</a>. 
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class='d-flex justify-content-center'>
+        <form action = "{% url 'recipes:create_recipe' %}" method="post">
+            {% csrf_token %}
+            <input type="text" value="{{ recipe.name }}" autocomplete="off" name = "recipe_name">
+            <input type="submit" value="Add recipe">
+        </form>
+    </div>
     
 {% endblock %}
 

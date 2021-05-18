@@ -21,3 +21,7 @@ def get_status(tag, recipe_id, request):
             return False
     return False
 
+
+@register.filter
+def get_item(dictionary, key):
+    return dictionary.get(key)

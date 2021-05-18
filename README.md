@@ -26,21 +26,19 @@ Things to credit:
 
 TODO:
 - register
-- make convert_unit actually do something
 - Toggle on navbar not working
 - On shopping list page: add button to switch types of units (metric to imperial)
 - switch search on index to ajax
 - Add nutrition info to detail page (maybe some to main page)
-- make "add ingredients" a pop-up off of edit recipe
 - Add "create regular shopping list" page
-- Finish formatting edit recipe
 - on index: buttons to display all public recipes, personal recipes, favorites
 - detail page - multiply recipe - and have that go to shopping list
 - put multiply recipe on card as well (instead of add to list? # in list: default 0)
 - if 0 as quantity in recipe: ask user if actually desired
 - add data validation to all forms
-- add edit ingredient
-- delete recipe from edit page
-- make cards fill all possible space - turn direction to cols instead of rows?
-- make recipes and ingredients that users add private to their accounts
+- make cards fill all possible space - turn direction to cols instead of rows? masonry through javascript?
 - add recipe circles so users can share recipes with a group (upper level function: be part of mulitple groups)
+- prefill category and unit forms for add_ingredient edit recipe version
+- update navbar to include create recipe, reorganize links
+- make modal to edit ingredient take up more width - no long indent (add wrapping div for adding new ingredient with class = indented)
+- Figure out why so many ingredients have "undetermined" as their common serving size unit

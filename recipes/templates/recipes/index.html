@@ -26,20 +26,23 @@
 <div class="container">
     <div class="row row-col">
         {% if recipe_list %}
-            {% for recipe in recipe_list %}
-                <div class=" col col-sm-6 g-2">
-                    <div class="card mb-3">
-                        <a href="{% url 'recipes:detail' recipe.id %}"></a>
+                {% for recipe in recipe_list %}
+                <div class='col-sm'>
+                    <div class='row-md g-1'>
+                        <div class="card">
                             {% if recipe.photo %}
-                                <img src="{{ recipe.photo.url }}" class="card-img-top" alt="recipe photo">
+                                <a href="{% url 'recipes:detail' recipe.id %}">
+                                    <img src="{{ recipe.photo.url }}" class="card-img-top" alt="recipe photo">
+                                </a>
                             {% endif %}
-                        </a>
-                        <div class="card-body">
-                            <div class="container">
+                            <div class="card-body">
                                 <div class="row row-col">
                                     <div class="col-sm-auto">
                                         <h5>
                                             <a class="undecorated" href="{% url 'recipes:detail' recipe.id %}">{{ recipe.name|title }}</a>
+                                            {% if recipe.personalized %}
+                                                <i class="fas fa-user-edit"></i>
+                                            {% endif %}
                                         </h5>
                                     </div>
                                     <div class="col">
@@ -50,7 +53,7 @@
                         </div>
                     </div>
                 </div>
-            {% endfor %}
+                {% endfor %}
         {% else %}
             <p>No recipes avaialbe.</p>
         {% endif %}

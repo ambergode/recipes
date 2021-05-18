@@ -5,146 +5,205 @@
 {% endblock %}
 
 {% block main %}
-{% include 'recipes/buttons.html' %}
-<form method="post" action = "{% url 'recipes:edit_recipe' recipe_id %}" enctype="multipart/form-data" >
-    {% csrf_token %}
-    <input type="hidden" name="recipe_id" value='{{ recipe.id }}'>
-    {{ photo_form.as_p }}
-    {% if recipe.photo %}
-        <img class="recipe_image img-fluid img-thumbnail" src="{{ recipe.photo.url }}" alt="recipe photo">
-    {% endif %}
-    <h1 class="inline">
-        <input type="text" name="name" value='{{ recipe.name|title }}'>
-    </h1>
-    <p>{{ meal_form }}</p>
-    <p>Author: 
-        {% if recipe.description %}
-            <input type='text' class='form-control' name='author' autocomplete="off" value='{{ recipe.author|capfirst }}'>
-        {% else %}
-            <input type='text' class='form-control' name='author' autocomplete="off" placeholder='Who wrote this recipe?'>
-        {% endif %}
-    </p>
-    <p>Do you want to share this recipe with the community?
-        <input type=checkbox name='public'>
-    </p>
-    <p>Description: 
-        {% if recipe.description %}
-            <input type="text" class="form-control" name="description" value="{{ recipe.description|capfirst }}" autocomplete="off">
-        {% else %}
-            <input type="text" class="form-control" name="description" placeholder="A short description" autocomplete="off">
-        {% endif %}
-        </p>
-    <p class="recipe_time">
-        {% if recipe.prep_time %}
-            <b>Prep:</b> <input type="number" name="prep" min=0 step=1 value="{{ recipe.prep_time|floatformat }}"> mins
-        {% else %}
-            <b>Prep:</b> <input type="number" name="prep" min=0 step=1 value="0"> mins
-        {% endif %}
-        {% if recipe.cook_time %}
-            <b>Cook:</b> <input type="number" name="cook" min=0 step=1 value="{{ recipe.cook_time|floatformat }}"> mins
-        {% else %}
-            <b>Cook:</b> <input type="number" name="cook" min=0 step=1 value="0"> mins
-        {% endif %}
-        <b>Total:</b> Calculated for you!
-        <br>
-        <b>Servings:</b> <input type="number" name="servings" value="{{ recipe.servings|floatformat }}" min=0>
-    </p>
-    <div class="ingredient_list">
-        <h5>Ingredients:</h5>
-        <i class="fas fa-search" id="search-icon"></i>
-        <input type="search" placeholder="Search ingredients" id="user-input" autocomplete="off">
-        <input type="hidden" id="recipe_id" value='{{ recipe.id }}'>
-        <div id="replaceable-content">
-            {% include 'recipes/ingredient_list.html' %}
-        </div>
-        <div class="selected_ingredients">
-            <ul>
-                {% for component in components %}
-                <li>
-                    <input type="number" name='quantity_{{ component.0.id }}' value = "{{ component.0.quantity|floatformat }}" class="num-input">
-                    {{ component.1 }}
-                    {{ component.0.ingredient }}
-                    <button type="button" class="btn btn-light">Remove</button>
-                    <button type="button" class="btn btn-light">Edit</button>                    
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-    </div>  
-    <div class="step_list">
-        <h5>Steps:</h5>
-        <p>Please enter one step per box.</p>
-        <div class="form-group">
-            {% if steps %}
-                <input type="hidden" name="num_steps" id="num_steps" value="{{ step_count }}">
-                <ol id="step_list">
-                    {% for step in steps %}
-                        <li>
-                            <input type="text" name="step_{{ step.order }}" id="step_{{ step.order }}" class="form-control" value="{{ step.step }}" autocomplete="off">
-                        </li>
-                    {% endfor %}
-                        <li>
-                            <input type="text" name="step_{{ step_count }}" id="step_{{ step_count }}" class="form-control" value="" autocomplete="off">
-                        </li>
-                </ol>
-            {% else %}
-                <input type="hidden" name="num_steps" id="num_steps" value="1">
-                <ol id="step_list">
-                    <li>
-                        <input type="text" name="step_0" id="step_0" class="form-control" placeholder="Step 1" autocomplete="off">
-                    </li>
-                </ol>
+{% load static %}
+    <div class='right-align'>
+        <div class='row'>
+            {% if user_owner %}
+                <div class='col g-1'>
+                    <form action="{% url 'recipes:delete_recipe' recipe_id %}" method='post'>
+                        {% csrf_token %}
+                        <input type='submit' name='delete_recipe' id="delete_recipe" value='Delete Recipe' class='btn-sm btn-danger'>
+                    </form>
+                </div>
             {% endif %}
+            <div class='col g-1'>
+                <form action="{% url 'recipes:cancel' %}" method='post'>
+                    {% csrf_token %}
+                    <input type='hidden' name='next' value='{{request.GET.next}}'>
+                    <input type='submit' name='cancel' value='Cancel' class='btn-sm btn-dark'>
+                </form>
+            </div>
         </div>
-        <p>
-            {% if recipe.notes %}
-                <input type="text" class="form-control" name="notes" value="{{ recipe.note|capfirst }}" autocomplete="off">
-            {% else %}
-                <input type="text" class="form-control" name="notes" placeholder="Additonal notes" value='' autocomplete="off">
-            {% endif %}
-        </p>
+        {% include 'recipes/fav_shop_plan_bar.html' %}
     </div>
-    <script>
-        document.getElementById("step_list").onchange = function () {
-            
-            // keep track of how many steps there are and what order they go in
-            number_li = document.getElementById("step_list").children.length;
-            human_read_num = number_li + 1;
-
-            let counter = document.getElementById("num_steps");
-            counter.value = human_read_num;
-            
-            let step_name = "step_" + (number_li - 1).toString()
-            let last_input = document.getElementById(step_name);
-            console.log(step_name, last_input)
-            if (last_input != null && last_input.value != "") {
-                // create a new form input for the next step
-                li = document.createElement("li");
-                let node = document.createElement("input");
-                node.setAttribute("name", "step_" + number_li);
-                node.setAttribute("type", "text");
-                node.setAttribute("class", "full-width");
-                node.setAttribute("class", "form-control");
-                let node_name = "step_" + number_li;
-                node.setAttribute("id", node_name);
-                node.setAttribute("value", "")
-
-                // add the new input into the li and then the ul
-                li.appendChild(node);
-                var element = document.getElementById("step_list");
-                element.appendChild(li);
-
-                // autofocus into new textbox
-                document.getElementById(node_name).focus();
-            }
-        };
-    </script>    
-    <input type="submit" id="edit_recipe" value="Update Recipe">   
-</form>
-
-<div id="replaceable-content-add-ing">
-    {% include 'recipes/add_ingredient.html' %}
-</div>
+    {% if messages %}
+        <div class="row">
+            {% for message in messages %}
+                <div class='col messages w-75'>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    <div class='container'>
+        <div class="alert alert-info alert-dismissible fade show w-75" role="alert">
+            {% if user_owner %}
+                {% if recipe.personalized %}
+                    Here is your copy of this recipe for your editing pleasure!
+                {% else %}
+                    You are editing the original recipe. If your recipe is public, other users can see your edits.
+                {% endif %}
+            {% else %}
+                You are making a private copy of this recipe and editing it.
+            {% endif %}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>  
+        <form method="post" action = "{% url 'recipes:edit_recipe' recipe_id %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="recipe_id" id="recipe_id" value='{{ recipe.id }}'>
+            <input type='hidden' name='user_id' value='{{ user_id }}'>
+            <div class='container'> 
+                <div class='fixed-bottom'>
+                    <input type="submit" id="edit_recipe" value="Update Recipe" class='btn-sm btn-dark btn-block w-100'>  
+                </div>
+                <div class='row'>
+                    <div class='col title'>
+                        <input type="text" name="name" autocomplete='off' value='{{ recipe.name|title }}'>
+                        {% if recipe.personalized %}
+                            <i class="fas fa-user-edit"></i>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class='float-right'>
+                    <div class='row'>
+                        {{ photo_form }}
+                    </div>
+                    <div class='row mx-auto'>
+                    {% if recipe.photo %}
+                        <img class="recipe_image img-fluid img-thumbnail" src="{{ recipe.photo.url }}" alt="recipe photo">
+                    {% endif %}
+                    </div>
+                </div>
+                <div class='row g-0'>
+                    <div class='col-sm-auto'>
+                        {{ meal_form.as_p }}
+                    </div>
+                    <div class='col-sm-auto'>
+                        <strong>Public?</strong>
+                        {% if user_owner %}
+                            {% if not recipe.personalized %}
+                                <input type='checkbox' name='public' {% if recipe.public %} checked {% endif %}>
+                            {% else %}
+                                Recipes can only be shared by their original poster
+                            {% endif %}
+                        {% else %}
+                            Recipes can only be shared by their original poster
+                        {% endif %}
+                    </div>
+                </div>
+                <div class='row g-0'>
+                    <p>Author:
+                        {% if recipe.author %}
+                            <input type='text' class='form-control' name='author' autocomplete="off" value='{{ recipe.author|capfirst }}'>
+                        {% else %}
+                            <input type='text' class='form-control' name='author' autocomplete="off" placeholder='Who wrote this recipe?'>
+                        {% endif %}
+                    </p>
+                    <p>Description: 
+                        {% if recipe.description %}
+                            <input type="text" class="form-control" name="description" value="{{ recipe.description|capfirst }}" autocomplete="off">
+                        {% else %}
+                            <input type="text" class="form-control" name="description" placeholder="A short description" autocomplete="off">
+                        {% endif %}
+                    </p>
+                </div>
+                <div class='row g-0'>
+                    <div class='col'>
+                        {% if recipe.servings %}
+                            Servings: <input type="number" name="servings" class="num-input" value="{{ recipe.servings|floatformat }}" min='0'>
+                        {% else %}
+                            Servings: <input type="number" name="servings" class="num-input" value="4" min='0'>
+                        {% endif %}
+                    </div>
+                    <div class='col'>
+                        {% if recipe.prep_time %}
+                            Prep: <input type="number" class='num-input' name="prep" min=0 step=1 value="{{ recipe.prep_time|floatformat }}"> mins
+                        {% else %}
+                            Prep: <input type="number" class='num-input' name="prep" min=0 step=1 value="0"> mins
+                        {% endif %}
+                    </div>
+                    <div class='col'>
+                        {% if recipe.cook_time %}
+                            Cook: <input type="number" class='num-input' name="cook" min=0 step=1 value="{{ recipe.cook_time|floatformat }}"> mins
+                        {% else %}
+                            Cook: <input type="number" class='num-input' name="cook" min=0 step=1 value="0"> mins
+                        {% endif %}
+                    </div>
+                </div>
+                <div class='row g-0'>
+                    <div class='col'>
+                        <h6>Ingredients</h6>
+                        <i class="fas fa-search" id="search-icon"></i>
+                        <input type="search" placeholder="Search ingredients" id="user-input" autocomplete="off">
+                    </div>
+                </div>
+                <div class='row'>
+                    <div id="replaceable-content">
+                        {% include 'recipes/ingredient_list.html' %}
+                    </div>
+                </div>
+                <div class='row p-1'>  
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <strong>Recommendation:</strong> For most accurate and complete nutrition information, enter quantities in terms of weight, not volume
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>                 
+                </div>  
+                <div id="ingredients_list">
+                    {% include 'recipes/added_ingredients_list.html' %}
+                </div>
+                <div class='row'>
+                    <div class='col'>
+                        <h6>Steps</h6>
+                        <p>Please enter one step per box.</p>
+                        {% if steps %}
+                            <input type="hidden" name="num_steps" id="num_steps" value="{{ step_count }}">
+                            <div>
+                                <ol id="step_list">
+                                    {% for step in steps %}
+                                        <div class='row '>
+                                            <div class='col g-1'>
+                                                <li>
+                                                    <input type="text" name="step_{{ step.order }}" id="step_{{ step.order }}" class="form-control" value="{{ step.step }}" autocomplete="off">
+                                                </li>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                    <div class='row'>
+                                        <div class='col g-1'>
+                                            <li>
+                                                <input type="text" name="step_{{ step_count }}" id="step_{{ step_count }}" class="form-control" value="" autocomplete="off">
+                                            </li>
+                                        </div>
+                                    </div>
+                                </ol>
+                            </div>
+                        {% else %}
+                            <input type="hidden" name="num_steps" id="num_steps" value="1">
+                            <ol id="step_list">
+                                <div class='row'>
+                                    <div class='col'>
+                                        <li>
+                                            <input type="text" name="step_0" id="step_0" class="form-control" placeholder="Step 1" autocomplete="off">
+                                        </li>
+                                    </div>
+                                </div>
+                            </ol>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class='row g-0'>
+                    <div class='col'>
+                        <h6>Additional Notes</h6>
+                        {% if recipe.notes %}
+                            <input type="text" class="form-control" name="notes" value="{{ recipe.note|capfirst }}" autocomplete="off">
+                        {% else %}
+                            <input type="text" class="form-control" name="notes" placeholder="Additonal notes" value='' autocomplete="off">
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
 
 {% endblock %}
 

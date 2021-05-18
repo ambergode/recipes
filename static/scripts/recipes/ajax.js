@@ -13,14 +13,8 @@ $(function(){ // this will be called when the DOM is ready
         $.getJSON(endpoint, request_parameters)
             .done(response => {
                 
-                const num_ingredient_options = response['number_ingredients']
-                let ing_div = undefined
-                if (num_ingredient_options > 0) {
-                    ing_div = $('#replaceable-content')
-                } else {
-                    ing_div = $('#replaceable-content-add-ing')
-                }
-                        
+                let ing_div = $('#replaceable-content');
+            
                 // fade out the ing_div, then:
                 ing_div.fadeTo('fast', 0).promise().then(() => {
                     // replace the HTML contents

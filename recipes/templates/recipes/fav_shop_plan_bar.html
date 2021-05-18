@@ -1,6 +1,6 @@
 {% load recipe_extras %}
 {{ request.user.id|json_script:"user_id" }}
-<div class="btn-group" role="group" aria-label="Add, remove, and favorite icons">
+<div class="btn-group" role="group" aria-label="Shopping list, planning list, and favorite icons">
     <form id="shop_{{ recipe.id }}" name="shop" method="POST">
         {% csrf_token %}
         {% get_status 'shop' recipe.id request as shop_status %}

@@ -11,7 +11,12 @@
     {% endif %}
     <div name='toolbar' class='row'>
         <div class='col'>
-            <h1 class="inline">{{ recipe.name|title }}</h1>
+            <h1 class="inline">
+                {{ recipe.name|title }}
+                {% if recipe.personalized %}
+                    <i class="fas fa-user-edit"></i>
+                {% endif %}
+            </h1>
         </div>
         <div class='col'>
             {% include 'recipes/buttons.html' %}

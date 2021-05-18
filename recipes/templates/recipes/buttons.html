@@ -1,7 +1,7 @@
 {% if user.is_authenticated %}
     <div class="container">
         <div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
-            <form name="edit_recipe" action="{% url 'recipes:display_edit_recipe' recipe.id %}" method="post">
+            <form name="edit_recipe" action="{% url 'recipes:display_edit_recipe' recipe.id %}?next={{request.path}}" method="post">
                 {% csrf_token %}
                 <input type='submit' value="Edit" class="btn-sm btn-light">
                 <input type="hidden" id="recipe_id" value="{{ recipe.id }}">

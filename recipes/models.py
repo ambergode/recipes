@@ -20,49 +20,49 @@ MEAL_CHOICES = (
 
 UNIT_CHOICES = (
     ("GRAM", "gram"),
+    ("CUP", "cup"),
+    ("TBSP", "tbsp"),
+    ("TSP", "tsp"),
     ("WTOZ", "wt oz"),
     ("FLOZ", "fl oz"),
-    ("CUP", "cup"),
-    ("TSP", "tsp"),
-    ("TBSP", "tbsp"),
     ("ML", "ml"),
     ("CAN", "can"),
+    ("GALLON", 'gallon'),
+    ("KILO", "kilo"),
+    ("LITER", "liter"),
+    ("LB", "lb"),
     ("PINT", 'pint'),
     ("QUART", 'quart'),
-    ("GALLON", 'gallon'),
-    ("LITER", "liter"),
-    ("KILO", "kilo"),
-    ("LB", "lb"),
     ("UNIT", "item"),
-    ("UNDETERMINED", "undetermined"),
+    ("UNDETERMINED", "?"),
 )
 
 CATEGORY_CHOICES = (
-    ("DAIRY_AND_EGG_PRODUCTS", 'dairy and eggs'),
-    ("SPICES_AND_HERBS", 'spices and herbs'),
+    ("ALCOHOLIC_BEVERAGES", 'alcoholic beverages'),
     ("BABY_FOODS", 'baby foods'),
-    ("FATS_AND_OILS", 'fats and oils'),
-    ("POULTRY_PRODUCTS", 'poultry'),
-    ("SOUPS_SAUCES_AND_GRAVIES", 'soups and sauces'),
-    ("SAUSAGES_AND_LUNCHEON_MEATS", 'sausages and lunch meats'),
-    ("BREAKFAST_CEREALS", 'breakfast cereals'),
-    ("FRUITS_AND_FRUIT_JUICES", 'fruits and fruit juices'),
-    ("PORK_PRODUCTS", 'pork'),
-    ("VEGETABLES_AND_VEGETABLE_PRODUCTS", 'vegetables'),
-    ("NUT_AND_SEED_PRODUCTS", 'nut and seed'),
+    ("BAKED_PRODUCTS", 'baked goods'),
     ("BEEF_PRODUCTS", 'beef'),
     ("BEVERAGES", 'beverages'),
-    ("FINFISH_AND_SHELLFISH_PRODUCTS", 'fish and shellfish'),
-    ("LEGUMES_AND_LEGUME_PRODUCTS", 'legumes'),
-    ("LAMB_VEAL_AND_GAME_PRODUCTS", 'lamb, veal, and game'),
-    ("BAKED_PRODUCTS", 'baked goods'),
-    ("SWEETS", 'sweets'),
+    ("BREAKFAST_CEREALS", 'breakfast cereals'),
     ("CEREAL_GRAINS_AND_PASTA", 'cereals, grains, and pasta'),
+    ("DAIRY_AND_EGG_PRODUCTS", 'dairy and eggs'),
     ("FAST_FOODS", 'fastfoods'),
+    ("FATS_AND_OILS", 'fats and oils'),
+    ("FINFISH_AND_SHELLFISH_PRODUCTS", 'fish and shellfish'),
+    ("FRUITS_AND_FRUIT_JUICES", 'fruits and fruit juices'),
+    ("LAMB_VEAL_AND_GAME_PRODUCTS", 'lamb, veal, and game'),
+    ("LEGUMES_AND_LEGUME_PRODUCTS", 'legumes'),
     ("MEALS_ENTREES_AND_SIDE_DISHES", 'prepared meals'),
-    ("SNACKS", 'snacks'),
+    ("NUT_AND_SEED_PRODUCTS", 'nut and seed'),
+    ("PORK_PRODUCTS", 'pork'),
+    ("POULTRY_PRODUCTS", 'poultry'),
     ("RESTAURANT_FOODS", 'restaurant foods'),
-    ("ALCOHOLIC_BEVERAGES", 'alcoholic beverages'),
+    ("SAUSAGES_AND_LUNCHEON_MEATS", 'sausages and lunch meats'),
+    ("SNACKS", 'snacks'),
+    ("SOUPS_SAUCES_AND_GRAVIES", 'soups and sauces'),
+    ("SPICES_AND_HERBS", 'spices and herbs'),
+    ("SWEETS", 'sweets'),
+    ("VEGETABLES_AND_VEGETABLE_PRODUCTS", 'vegetables'),
     ("OTHER", 'other'),
 )
 
@@ -81,6 +81,8 @@ class Recipe(models.Model):
     public = models.BooleanField(default = False)
     # The user who uploaded the recipe
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    # if the recipe is the original (false) or a personalized version of another (true)
+    personalized = models.BooleanField(default = False)
     
     snack_or_meal = models.CharField(
         max_length = 10,
@@ -190,14 +192,13 @@ class Ingredient(models.Model):
     monounsatfats = __nutrient_field()
     polyunsatfats = __nutrient_field()
 
-
     def __str__(self):
         return self.ingredient
 
 class IngQuant(models.Model):
     ingredient = models.ForeignKey(Ingredient, on_delete = models.CASCADE)
     quantity = models.DecimalField(max_digits = 7, decimal_places = 2, default = 0)
-    recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE)
+    recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE, null = True, blank = True)
 
     unit = models.CharField(
         max_length = 13,
@@ -212,7 +213,7 @@ class IngQuant(models.Model):
         unit = self.unit.lower()
         if self.quantity != 1 and unit != "":
             unit += "s"
-        return str(self.ingredient) + " " + str(self.quantity) + " "
+        return str(self.ingredient) + " " + str(self.quantity) + " " + str(self.unit)
 
 class Favorites(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE)

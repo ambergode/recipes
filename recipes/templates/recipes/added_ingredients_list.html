@@ -1,0 +1,37 @@
+{% for component in components %}
+    <div class='row p-0.5 g-0 indented'>
+        <div class='col-sm-auto'>
+            <input type="number" name='quantity_{{ component.0.id }}' value = "{{ component.0.quantity|floatformat }}" class="num-input">
+        </div>
+        <div class='col-sm-auto'>
+            {{ component.1 }}
+        </div>
+        <div class='col'>
+            {{ component.0.ingredient }}
+        </div>
+        <div class='col-sm-auto'>
+            <button type="button" name='rem_{{ component.0.id }}' id='rem_{{ component.0.id }}' class="btn btn-link"><i class="fas fa-trash"></i></button>
+            <!-- Button trigger modal -->
+            <button type="button" name='edt_{{ component.0.id }}' id='edt_{{ component.0.id }}' class="btn btn-link" data-bs-toggle="modal" data-bs-target="#modal_{{ component.0.id }}"><i class="fas fa-edit"></i></button>  
+        </div>
+        
+        <!-- Modal -->
+        <div class="modal fade" id="modal_{{ component.0.id }}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Edit Ingredient</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {% include 'recipes/add_ingredient.html' %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary" name='save_ingredient' value='save_ingredient_{{ component.0.ingredient.id }}'>Save changes</button>
+            </div>
+            </div>
+        </div>
+        </div>
+    </div>
+{% endfor %}

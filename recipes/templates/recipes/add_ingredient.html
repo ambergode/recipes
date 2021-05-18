@@ -1,41 +1,191 @@
-{% if searched %}
-    <div name="add_ingredint">
-        <p>Can't find what you're looking for? Add it!</p>
-        <form action="{% url 'recipes:add_ingredient' %}" id="add_ingredient" method="post">
-            {% csrf_token %}
-            <input type="hidden" name="recipe_id" value="{{ recipe.id }}">
-            <h5><input type="text" name="ingredient_name" value='{{ search|title }}'></h5>
+<div name="add_ingredient" class='card add_ing_card'>
+    <div class='card-body'>
+        {% if component.0.ingredient.ingredient %}
+            <p>Not what you think it should be? Change it!</p>
+            <h5><input type="text" name="add_ingredient_name_{{ component.0.ingredient.id }}" value='{{ component.0.ingredient.ingredient|title }}'></h5>
+        {% else %}
+            <p>Can't find what you're looking for? Add it!</p>
+            <h5><input type="text" name="add_ingredient_name" value='{{ search|title }}'></h5>
+        {% endif %}
+        <input type="hidden" name="recipe_id" value="{{ recipe.id }}">
+        <div>
             <h6>Basic information</h6>
-            <ul>
+            <ul class='invisible_bullet'>
+                {% if component.0.ingredient.category %}
+                    <li>Current: {{ component.0.ingredient.category }}
+                {% endif %}
                 <li>Category: {{ category_form }}</li>
-                <li>
-                    Serving size and unit: <input type="number" name="serving_size" value='0'>
-                    {{ new_ing_unit_form }}
-                </li>
-                <li>Weight in grams per serving: <input type="number" name="weight_per_serving" value="0"></li>
+                {% if component.0.ingredient.typical_serving_size %}
+                    <li> 
+                        Serving size: <input type="number" name="serving_size" value='{{ component.0.ingredient.typical_serving_size|floatformat:'0' }}' class='num-input'>
+                        {{ new_ing_unit_form }} Current Unit: {{ component.0.ingredient.typical_serving_unit }}
+                    </li>
+                {% else %}
+                    <li>
+                        Serving size: <input type="number" name="serving_size" value='0' class='num-input'>
+                        {{ new_ing_unit_form }} 
+                    </li>
+                {% endif %}
+                {% if component.0.ingredient.weight_per_serving %}
+                    <li>Weight: <input type="number" name="weight_per_serving" value="{{ component.0.ingredient.weight_per_serving|floatformat:'0' }}" class='num-input'> g/serving</li>
+                {% else %}
+                    <li>Weight: <input type="number" name="weight_per_serving" value="0" class='num-input'> g/serving</li>
+                {% endif %}
             </ul>
+        </div>
+        <div>
             <h6>Nutrition information</h6>
-            <ul>
-                <li>Calories: <input type="number" name="calories" value="0"></li>
-                <li>Total Fat: <input type="number" name="fat" value="0"> g
-                    <ul>
-                        <li>Transfat: <input type="number" name="transfats" value="0"> g</li>
-                        <li>Saturated Fat: <input type="number" name="satfats" value="0"> g</li>
-                        <li>Monounsaturated Fat: <input type="number" name="monounsatfats" value="0"> g</li>
-                        <li>Polyunsaturated Fat:<input type="number" name="polyunsatfats" value="0"> g</li>
-                    </ul>
-                </li>
-                <li>Cholesterol: <input type="number" name="cholesterol" value="0"> mg</li>
-                <li>Sodium: <input type="number" name="sodium" value="0"> mg</li>
-                <li>Carbs: <input type="number" name="carbs" value="0"> g
-                    <ul>
-                        <li>Fiber: <input type="number" name="fiber" value="0"> g</li>
-                        <li>Sugar: <input type="number" name="sugar" value="0"> g</li>
-                    </ul>
-                </li>
-                <li>Protein: <input type="number" name="protein" value="0"> g</li>
-            </ul>
-            <input type="submit" form="add_ingredient" value="Add Ingredient">
-        </form>
+            <table>
+                <tr>
+                    <td>
+                        Calories: 
+                    </td>
+                    <td>
+                        {% if component.0.ingredient.calories %}
+                            <input type="number" name="calories" value="{{ component.0.ingredient.calories|floatformat:'0' }}" class='num-input'>
+                        {% else %}
+                            <input type="number" name="calories" value="0" class='num-input'>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Total Fat: 
+                    </td>
+                    <td>
+                        {% if component.0.ingredient.fat %}
+                            <input type="number" name="fat" value="{{ component.0.ingredient.fat|floatformat:'0' }}" class='num-input'> g
+                        {% else %}
+                            <input type="number" name="fat" value="0" class='num-input'> g
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class='indented'>
+                        Transfat: 
+                    </td>
+                    <td>
+                        {% if component.0.ingredient.transfats %}
+                            <input type="number" name="transfats" value="{{ component.0.ingredient.transfats|floatformat:'0' }}" class='num-input'> g
+                        {% else %}
+                            <input type="number" name="transfats" value="0" class='num-input'> g
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class='indented'>
+                        Saturated Fat: 
+                    </td>
+                    <td>
+                        {% if component.0.ingredient.satfats %}
+                            <input type="number" name="satfats" value="{{ component.0.ingredient.satfats|floatformat:'0' }}" class='num-input'> g
+                        {% else %}
+                            <input type="number" name="satfats" value="0" class='num-input'> g
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class='indented'>
+                        Monounsaturated Fat: 
+                    </td>
+                    <td>
+                        {% if component.0.ingredient.monounsatfats %}
+                            <input type="number" name="monounsatfats" value="{{ component.0.ingredient.monounsatfats|floatformat:'0' }}" class='num-input'> g
+                        {% else %}
+                            <input type="number" name="monounsatfats" value="0" class='num-input'> g
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class='indented'>
+                        Polyunsaturated Fat:
+                    </td>
+                    <td>
+                        {% if component.0.ingredient.polyunsatfats %}
+                            <input type="number" name="polyunsatfats" value="{{ component.0.ingredient.polyunsatfats|floatformat:'0' }}" class='num-input'> g
+                        {% else %}
+                            <input type="number" name="polyunsatfats" value="0" class='num-input'> g
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Cholesterol: 
+                    </td>
+                    <td>
+                        {% if component.0.ingredient.cholesterol %}
+                            <input type="number" name="cholesterol" value="{{ component.0.ingredient.cholesterol|floatformat:'0' }}" class='num-input'> mg
+                        {% else %}
+                            <input type="number" name="cholesterol" value="0" class='num-input'> mg
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Sodium: 
+                    </td>
+                    <td>
+                        {% if component.0.ingredient.sodium %}
+                            <input type="number" name="sodium" value="{{ component.0.ingredient.sodium|floatformat:'0' }}" class='num-input'> mg
+                        {% else %}
+                            <input type="number" name="sodium" value="0" class='num-input'> mg
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Carbs: 
+                    </td>
+                    <td>
+                        {% if component.0.ingredient.carbs %}
+                            <input type="number" name="carbs" value="{{ component.0.ingredient.carbs|floatformat:'0' }}" class='num-input'> g
+                        {% else %}
+                            <input type="number" name="carbs" value="0" class='num-input'> g
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class='indented'>
+                        Fiber: 
+                    </td>
+                    <td>
+                        {% if component.0.ingredient.fiber %}
+                            <input type="number" name="fiber" value="{{ component.0.ingredient.fiber|floatformat:'0' }}" class='num-input'> g
+                        {% else %}
+                            <input type="number" name="fiber" value="0" class='num-input'> g
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class='indented'>
+                        Sugar: 
+                    </td>
+                    <td>
+                        {% if component.0.ingredient.sugar %}
+                            <input type="number" name="sugar" value="{{ component.0.ingredient.sugar|floatformat:'0' }}" class='num-input'> g
+                        {% else %}
+                            <input type="number" name="sugar" value="0" class='num-input'> g
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Protein: 
+                    </td>
+                    <td>
+                        {% if component.0.ingredient.protein %}
+                            <input type="number" name="protein" value="{{ component.0.ingredient.protein|floatformat:'0' }}" class='num-input'> g
+                        {% else %}
+                            <input type="number" name="protein" value="0" class='num-input'> g
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+        </div>
     </div>
-{% endif %}
+    {% if not component.0.ingredient %}
+        <div class='row'>
+            <input type="submit" name="add_ingredient" class='btn-sm btn-dark' value="Add Ingredient">
+        </div>
+    {% endif %}
+</div>

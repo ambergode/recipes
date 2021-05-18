@@ -1,8 +1,18 @@
-{% if ingredients %}
-    <select name="ingredient_name">
-        {% for ingredient in ingredients %}
-        <option value="{{ ingredient }}">{{ ingredient }}</li>
-        {% endfor %}
-    </select>
-    <input type="submit" value="Add Ingredient" name="add_to_recipe">
+{% if searched %}
+    <div id="replaceable-content" class='col g-0'>
+        {% if ingredients %}
+            <div class='row'>
+                <div class='col'>
+                    <select name="ingredient_name">
+                        {% for ingredient in ingredients %}
+                        <option value="{{ ingredient }}">{{ ingredient }}</li>
+                        {% endfor %}
+                    </select>
+                    <input type="submit" value="Add Ingredient" name="add_to_recipe">  
+                </div>
+            </div>
+        {% else %}
+            {% include 'recipes/add_ingredient.html' %}
+        {% endif %}
+    </div>
 {% endif %}
