@@ -26,15 +26,6 @@
         </div>
         {% include 'recipes/fav_shop_plan_bar.html' %}
     </div>
-    {% if messages %}
-        <div class="row">
-            {% for message in messages %}
-                <div class='col messages w-75'>
-                    {{ message }}
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
     <div class='container'>
         <div class="alert alert-info alert-dismissible fade show w-75" role="alert">
             {% if user_owner %}

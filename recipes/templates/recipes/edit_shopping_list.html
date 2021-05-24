@@ -16,8 +16,9 @@
                 </form>
             </div>
             <div class='col g-1'>
-                <form action="{% url 'recipes:delete_recipe' recipe_id %}" method='post'>
+                <form action="{% url 'recipes:delete_list' recipe_id %}" method='post'>
                     {% csrf_token %}
+                    <input type='hidden' name='delete_model' id='model' value='shopping_list'>
                     <input type='submit' name='delete_list' id="delete_list" value='Delete List' class='btn-sm btn-danger'>
                 </form>
             </div>
@@ -39,7 +40,7 @@
         <input type='hidden' name='model' id='model' value='shopping_list'>
         <h3>
             {% if recipe.name %}
-                <input type='text' name='name' value='{{ recipe.name }}' autocomplete='off'>
+                <input type='text' name='name' value='{{ recipe.name|title }}' autocomplete='off'>
             {% else %}
                 <input type='text' name='name' placeholder="List name" autocomplete='off'>
             {% endif %}

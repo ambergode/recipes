@@ -4,24 +4,23 @@ function record_button (evt, button_type, button_recipe) {
     evt.preventDefault(); 
     const recipe_id = button_recipe;
     const endpoint = "/recipes/button_ajax/";
-    const user_id = $('#user_id').val();
     const model = $('#model').val();
-
+    console.log('in record button')
     let symbols_dict = {
         favorite: {
             "button_id": "sub_fav",
-            "add": '<i class="fas fa-heart" style="color:#ab0000"></i>',
-            "remove": '<i class="far fa-heart" style="color:grey"></i>'
+            "add": '<i class="fas fa-heart" title="Remove from Favorites" style="color:#ab0000"></i>',
+            "remove": '<i class="far fa-heart" title="Add to Favorites" style="color:grey"></i>'
         },
         shop:{
             "button_id": "sub_shop",
-            "add": '<i class="fas fa-store" style="color:#006300"></i>',
-            "remove": '<i class="fas fa-store-slash" style="color:grey"></i>'
+            "add": '<i class="fas fa-store" title="Remove from Shopping List" style="color:#006300"></i>',
+            "remove": '<i class="fas fa-store-slash" title="Add to Shopping List" style="color:grey"></i>'
         },
         plan: {
             "button_id": "sub_plan",
-            "add": '<i class="far fa-calendar-check" style="color:#006300"></i>',
-            "remove": '<i class="far fa-calendar-times" style="color:grey"></i>'
+            "add": '<i class="far fa-calendar-check" title="Remove from Meal Planning" style="color:#006300"></i>',
+            "remove": '<i class="far fa-calendar-times" title="Add to Meal Planning"style="color:grey"></i>'
         }
     };
     
@@ -34,7 +33,6 @@ function record_button (evt, button_type, button_recipe) {
             recipe_id: recipe_id, 
             'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val(),
             tag: button_type,
-            user_id: user_id, 
             model: model,
         },
         datatype:'json',

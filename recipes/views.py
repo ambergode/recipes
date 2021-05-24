@@ -19,18 +19,32 @@ from .forms import MealForm, UnitForm, CategoryForm, RecipePhotoForm
 def normalize(data):
     return data.strip().lower()
 
-def index(request):
+def index(request, model_name='recipe'):
+    if model_name == "shopping_list":
+        model = ShoppingList
+    else:
+        model = Recipe
+
     if request.user.is_authenticated:
+
+        user = request.user
+
         # TODO AJAX search
         if request.GET.get("q") == None:
-            user = request.user
-            recipe_list = Recipe.objects.filter(user=user).order_by('-name')
+            recipe_list = model.objects.filter(user=user).order_by('-name')
         else:
-            recipe_list = Recipe.objects.filter(name__icontains=request.GET.get("q"), user=user)
+            recipe_list = model.objects.filter(name__icontains=request.GET.get("q"), user=user)
     else:
-        recipe_list = Recipe.objects.filter(public = True).order_by('-name')
+        recipe_list = model.objects.filter(public = True).order_by('-name')
+    
+    ctx = {
+        'recipe_list': recipe_list, 
+        'request': request, 
+        'model': model_name}
 
-    return render(request, "recipes/index.html", {'recipe_list': recipe_list, 'request': request}) 
+    # if model_name = 'shopping_list':
+        # ctx['shopping_list']
+    return render(request, "recipes/index.html", ctx) 
 
 def index_all(request):
     if request.user.is_authenticated:
@@ -40,7 +54,7 @@ def index_all(request):
         recipe_list = Recipe.objects.filter(public = True).order_by('-name')
     return render(request, "recipes/index.html", {'recipe_list': recipe_list, 'request': request}) 
 
-@login_required
+
 def detail(request, recipe_id):
 
     def record_nutrient_value(nutrient, ingredient, in_grams, nutrition):
@@ -171,71 +185,7 @@ def get_components(recipe):
 
 @login_required
 def display_edit_recipe(request, recipe_id):
-    ctx = {  
-        "photo_form": RecipePhotoForm(),
-        'user_id': request.user.id,
-        'new_ing_unit_form': UnitForm(),
-        'category_form': CategoryForm(),
-        'unit_choices': UNIT_CHOICES,
-        'category_choices': CATEGORY_CHOICES,
-        'model': 'recipe'
-    }
-
-    recipe_init = Recipe.objects.get(pk = recipe_id)
-    recipe_init_id = recipe_init.id
-    # check to see if there is a personalized recipe of the same name for that user
-    recipe = personalize_if_user_not_owner(request.user, recipe_init)
-    # if personalized_if_user_not_owner changes the recipe, it is personalized
-    if recipe.id != recipe_init_id:
-        ctx['already_personalized'] = True
-
-    ctx['recipe'] = recipe
-    ctx['meal_form'] = MealForm(initial={'type_of_meal': recipe.snack_or_meal.upper()})
-    ctx['recipe_id'] = recipe.id
-
-    if request.user == recipe.user:
-        ctx['user_owner'] = True
-
-    ctx["components"] = get_components(recipe)
-
-    steps = recipe.get_steps()
-    if steps.count() > 0:
-        ctx['steps'] = steps
-        ctx['step_count'] = steps.count()
-    
-    ingredients = None
-    searched = False
-    url_parameter = request.GET.get("q")
-    ctx["search"] = url_parameter
-    if url_parameter:
-        url_parameters = url_parameter.split()
-        args = []
-        for param in url_parameters:
-            param = param.strip(", /-")
-            args.append(Q(ingredient__icontains=param))
-        # need to only return ingredients that are public or belong to the user
-        ingredients = Ingredient.objects.filter(*args).filter(Q(user = None) | Q(user = request.user))
-        ctx["ingredients"] = ingredients
-
-    if request.is_ajax():
-        searched = True
-        if ctx['ingredients'].count() == 0:
-            # get ready to create a new ingredient
-            ctx['searched'] = searched
-            template = loader.get_template('recipes/ingredient_list.html')
-            context = ctx
-            html = template.render(context, request)
-        else:
-            ctx['searched'] = searched
-            template = loader.get_template('recipes/ingredient_list.html')
-            context = ctx
-            html = template.render(context, request)
-        data_dict = {
-            "html_from_view": html, 
-        }
-        return JsonResponse(data=data_dict, safe=False)
-
-    return render(request, 'recipes/edit_recipe.html', context = ctx)
+    return display_edit(request, recipe_id, 'recipe')
 
 def personalize_if_user_not_owner(requesting_user, recipe):
     if requesting_user != recipe.user:
@@ -265,86 +215,8 @@ def personalize_if_user_not_owner(requesting_user, recipe):
 
 @login_required
 def record_edit_recipe(request, recipe_id):
-    recipe = Recipe.objects.get(pk = recipe_id)
-    requesting_user = request.user
-    recipe = personalize_if_user_not_owner(requesting_user, recipe)
+    return record_edit(request, recipe_id, Recipe)
 
-    recipe.name = normalize(request.POST.get('name'))
-    recipe.description = request.POST.get('description')
-    recipe.prep_time = request.POST.get('prep')
-    recipe.cook_time = request.POST.get('cook')
-    recipe.servings = request.POST.get('servings')
-    recipe.notes = request.POST.get('notes')
-    recipe.author = request.POST.get('author')
-    recipe.user = request.user
-    if request.POST.get('public') != None: 
-        recipe.public = True
-    else:
-        recipe.public = False
-
-    meal_form = MealForm(request.POST)
-    if meal_form.is_valid():
-        recipe.snack_or_meal = meal_form.cleaned_data.get('type_of_meal')
-
-    photo_form = RecipePhotoForm(request.POST, request.FILES)
-    if photo_form.is_valid():
-        if photo_form.cleaned_data.get('photo') != None:
-            recipe.photo = photo_form.cleaned_data.get('photo')
-
-    added_components = recipe.get_ingquants()
-    components_ingredients = []
-    for component in added_components:
-        components_ingredients.append(component.ingredient.id)
-        new_quantity = request.POST.get('quantity_' + str(component.id), None)
-        if new_quantity != None:
-            component.quantity = new_quantity
-        new_unit = request.POST.get('name_' + str(component.id) +"-choose_unit", None)
-        if new_unit != None:
-            component.unit = new_unit
-        component.save()
-
-    # record steps
-    num_steps = int(request.POST.get("num_steps"))
-    if num_steps > 0:
-        # delete previously created steps 
-        recipe.get_steps().delete()
-
-    # add in new steps
-    count = 0
-    for i in range(num_steps + 1):
-        step = request.POST.get("step_" + str(i))
-        if step != "" and step != None:
-            step = step.strip()
-            step = Step(
-                step = step,
-                order = count, 
-                recipe = recipe
-            )
-            count += 1
-            step.save()
-
-    recipe.save()
-
-    if request.POST.get('add_to_recipe') != None:
-        added_ingredient = Ingredient.objects.filter(ingredient = request.POST['ingredient_name'])
-        if added_ingredient[0].id not in components_ingredients:
-            ing = IngQuant(
-                ingredient = added_ingredient[0],
-                recipe = recipe
-            )
-            ing.save()
-        # no else - alredy added to ingredients list
-        return HttpResponseRedirect(reverse("recipes:display_edit_recipe", args=(recipe.id,)))
-    
-    if request.POST.get('add_ingredient') != None:
-        return add_ingredient(request)
-    
-    if request.POST.get('save_ingredient') != None:
-        ingredient_id = request.POST.get('save_ingredient')[16:]
-        return add_ingredient(request, ingredient_id)
- 
-    return HttpResponseRedirect(reverse("recipes:detail", args=(recipe.id,)))
-        
 
 @login_required
 def add_ingredient(request, ingredient_id = None, source = 'recipe'):
@@ -394,7 +266,7 @@ def add_ingredient(request, ingredient_id = None, source = 'recipe'):
 
     # identify the recipe
     recipe_id = request.POST.get('recipe_id')
-    model = request.POST.get('model')
+    model = source
     if model == 'shopping_list':
         recipe = ShoppingList.objects.get(pk = recipe_id)
     else:
@@ -407,7 +279,10 @@ def add_ingredient(request, ingredient_id = None, source = 'recipe'):
     if ingredient_id != None:
         ingredient_name = request.POST['add_ingredient_name_' + ingredient_id].strip().lower()
         # identify the initial ingquant from the recipe
-        ingquant = IngQuant.objects.filter(recipe = recipe, ingredient = ingredient_id)
+        if model == 'shopping_list':
+            ingquant = IngQuant.objects.filter(shopping_list = recipe, ingredient = ingredient_id)
+        else:
+            ingquant = IngQuant.objects.filter(recipe = recipe, ingredient = ingredient_id)
         if len(ingquant) > 0:
             # make sure to transfer quantity from prior inquant
             quantity = ingquant[0].quantity
@@ -466,7 +341,10 @@ def add_ingredient(request, ingredient_id = None, source = 'recipe'):
             new_ingquant.recipe = Recipe.objects.get(pk=recipe_id)
         new_ingquant.save()
     else:
-        update_ingquant = IngQuant.objects.filter(ingredient = added_ingredient.id, recipe = recipe)[0]
+        if model == 'shopping_list':
+            update_ingquant = IngQuant.objects.filter(ingredient = added_ingredient.id, shopping_list = recipe)[0]
+        else:
+            update_ingquant = IngQuant.objects.filter(ingredient = added_ingredient.id, recipe = recipe)[0]
         update_ingquant.quantity = quantity
         update_ingquant.unit = unit
         update_ingquant.save()
@@ -601,9 +479,8 @@ def button_ajax(request):
             'plan': Plan,
             'favorite': Favorites 
         }
-        user_id = request.POST.get('user_id')
-        user = User.objects.get(pk = user_id)
 
+        user = request.user
         model = action_dict[action]
         
         if model_update == ShoppingList:
@@ -660,34 +537,88 @@ def update_ingredients(request):
     
     return HttpResponse("Something went wrong with updating ingredients.")
 
-
 def delete_recipe(request, recipe_id):
-    recipe = Recipe.objects.get(pk = recipe_id)
-    requesting_user = request.user
-    if requesting_user == recipe.user:
-        recipe.delete()
-        return HttpResponseRedirect(reverse("recipes:index"))
+    return delete(request, Recipe, recipe_id, ingredient_id = None)
+
+def delete_list(request, recipe_id):
+    return delete(request, ShoppingList, recipe_id, ingredient_id = None)
+
+def delete(request, model, recipe_id, ingredient_id = None):
+    
+    if model == ShoppingList:
+        destination = "recipes:shopping" 
+        error_destination = "recipes:update_shopping_list"
     else:
-        messages.info(request, 'You cannot delete a recipe that does not belong to you.')
-        return HttpResponseRedirect(reverse("recipes:display_edit_recipe", args=(recipe_id,)))
+        destination = "recipes:index"
+        error_destination = "recipes:display_edit_recipe"
+    
+    recipe = model.objects.get(pk = recipe_id)
+    delete_object = recipe
+    
+    if ingredient_id != None:
+        model = Ingredient
+        destination = 'send to error dest'
+        delete_object = model.objects.get(pk = ingredient_id)
+    print('model, dest, error dest', model, destination, error_destination)
+    requesting_user = request.user
+
+    if delete_object.user.id == requesting_user.id:
+        delete_object.delete()
+        if destination != 'send to error dest':
+            return HttpResponseRedirect(reverse(destination))
+        else:
+            return HttpResponseRedirect(reverse(error_destination, args=(recipe_id,)))
+    else:
+        messages.info(request, 'You cannot delete something that does not belong to you.')
+        return HttpResponseRedirect(reverse(error_destination, args=(recipe_id,)))
     
 def cancel(request):
     valuenext = request.POST.get('next')
     return HttpResponseRedirect(valuenext)
 
-def update_shopping_list(request, recipe_id):
+def display_edit(request, object_id, model_name):
     ctx = {  
         'user_id': request.user.id,
         'unit_choices': UNIT_CHOICES,
         'category_choices': CATEGORY_CHOICES,
-        'model': 'shopping_list'
+        'model': model_name
     }
-
-    recipe = ShoppingList.objects.get(pk = recipe_id)
     
+    if model_name == 'shopping_list':
+        model = ShoppingList
+    else:
+        model = Recipe
+
+    # called recipe, but could be shopping list also
+    recipe = model.objects.get(pk = object_id)
+
+    # recipe specific instructions
+    if model == Recipe:
+        # check to see if the user is the owner of the recipe
+        if request.user == recipe.user:
+            ctx['user_owner'] = True
+        # if recipe not owned by user
+        else:
+            # check to see if there is a personalized recipe of the same name for that user
+            recipe_alt = personalize_if_user_not_owner(request.user, recipe)
+            # if personalize_if_user_not_owner changes the recipe, it is personalized
+            if recipe_alt != -1:
+                if recipe.id != recipe_alt.id:
+                    ctx['already_personalized'] = True
+                recipe = recipe_alt
+
+        # get the steps of the recipe        
+        steps = recipe.get_steps()
+        if steps.count() > 0:
+            ctx['steps'] = steps
+            ctx['step_count'] = steps.count()
+
+        ctx['meal_form'] = MealForm(initial={'type_of_meal': recipe.snack_or_meal.upper()}) 
+        ctx['photo_form'] = RecipePhotoForm()
+
+    # back to instructions for recipes and shopping lists
     ctx['recipe'] = recipe
     ctx['recipe_id'] = recipe.id
-
     ctx["components"] = get_components(recipe)
 
     ingredients = None
@@ -705,31 +636,78 @@ def update_shopping_list(request, recipe_id):
         ctx["ingredients"] = ingredients
 
     if request.is_ajax():
-        searched = True
-        if ctx['ingredients'].count() == 0:
-            # get ready to create a new ingredient
-            ctx['searched'] = searched
-            template = loader.get_template('recipes/ingredient_list.html')
-            context = ctx
-            html = template.render(context, request)
-        else:
-            ctx['searched'] = searched
-            template = loader.get_template('recipes/ingredient_list.html')
-            context = ctx
-            html = template.render(context, request)
+        ctx['searched'] = True
+        template = loader.get_template('recipes/ingredient_list.html')
+        context = ctx
+        html = template.render(context, request)
         data_dict = {
             "html_from_view": html, 
         }
         return JsonResponse(data=data_dict, safe=False)
 
-    return render(request, 'recipes/edit_shopping_list.html', context = ctx)
+    if model == Recipe:
+        return render(request, 'recipes/edit_recipe.html', context = ctx)
+    else:
+        return render(request, 'recipes/edit_shopping_list.html', context = ctx)
 
-def record_shopping_list(request, recipe_id):
-    recipe = ShoppingList.objects.get(pk = recipe_id)
-    recipe.user = request.user
+def record_edit(request, object_id, model):
+    recipe = model.objects.get(pk = object_id)
+    requesting_user = request.user
+    
+    if model == ShoppingList:
+        destination = "recipes:update_shopping_list"
+    # just recipes
+    else: 
+        destination = "recipes:display_edit_recipe"
+        recipe = personalize_if_user_not_owner(requesting_user, recipe)
+        # if there is an error and the recipe shows up more than once in the database
+        if recipe == -1:
+            messages.error(request, "The recipe already exists in the database. Please edit  it from its own page.")
+            return HttpResponseRedirect(reverse(destination, args=(recipe.id,))) 
+        recipe.prep_time = request.POST.get('prep')
+        recipe.cook_time = request.POST.get('cook')
+        recipe.servings = request.POST.get('servings')
+        recipe.notes = request.POST.get('notes')
+        recipe.author = request.POST.get('author')
+        if request.POST.get('public') != None: 
+            recipe.public = True
+        else:
+            recipe.public = False
+
+        meal_form = MealForm(request.POST)
+        if meal_form.is_valid():
+            recipe.snack_or_meal = meal_form.cleaned_data.get('type_of_meal')
+
+        photo_form = RecipePhotoForm(request.POST, request.FILES)
+        if photo_form.is_valid():
+            if photo_form.cleaned_data.get('photo') != None:
+                recipe.photo = photo_form.cleaned_data.get('photo')
+        
+        # record steps
+        num_steps = int(request.POST.get("num_steps"))
+        if num_steps > 0:
+            # delete previously created steps 
+            recipe.get_steps().delete()
+
+        # add in new steps
+        count = 0
+        for i in range(num_steps + 1):
+            step = request.POST.get("step_" + str(i))
+            if step != "" and step != None:
+                step = step.strip()
+                step = Step(
+                    step = step,
+                    order = count, 
+                    recipe = recipe
+                )
+                count += 1
+                step.save()
+
+    # recipe and shopping list
     recipe.name = normalize(request.POST.get('name'))
     recipe.description = request.POST.get('description')
-    
+    recipe.user = request.user
+
     added_components = recipe.get_ingquants()
     components_ingredients = []
     for component in added_components:
@@ -744,25 +722,49 @@ def record_shopping_list(request, recipe_id):
 
     recipe.save()
 
+    print('requests', request.POST.get('add_to_recipe'), request.POST.get('add_ingredient'), request.POST.get('save_ingredient'), request.POST.get('delete_ingredient'))
     if request.POST.get('add_to_recipe') != None:
         added_ingredient = Ingredient.objects.filter(ingredient = request.POST['ingredient_name'])
         if added_ingredient[0].id not in components_ingredients:
             ing = IngQuant(
                 ingredient = added_ingredient[0],
-                shopping_list = recipe
             )
+            if model == Recipe:
+                ing.recipe = recipe
+            else:
+                ing.shopping_list = recipe
             ing.save()
-        # no else - alredy added to ingredients list
-        return HttpResponseRedirect(reverse("recipes:update_shopping_list", args=(recipe.id,)))
+        # already added to ingredients list
+        else:
+            messages.info(request, added_ingredient[0].ingredient + " is already in the ingredients list.")
+        return HttpResponseRedirect(reverse(destination, args=(recipe.id,)))
     
+    if model == Recipe:
+        model_name = 'recipe'
+    else:
+        model_name = 'shopping_list'
+
     if request.POST.get('add_ingredient') != None:
-        return add_ingredient(request, source='shopping_list')
+        return add_ingredient(request, source = model_name)
     
     if request.POST.get('save_ingredient') != None:
         ingredient_id = request.POST.get('save_ingredient')[16:]
-        return add_ingredient(request, ingredient_id, source='shopping_list')
+        return add_ingredient(request, ingredient_id, source = model_name)
+    
+    if request.POST.get('delete_ingredient') != None:
+        ingredient_id = request.POST.get('delete_ingredient')[18:]
+        return delete(request, model, recipe.id, ingredient_id)
  
-    return HttpResponseRedirect(reverse("recipes:detail_shopping_list", args=(recipe.id,)))
+    if model == Recipe:
+        return HttpResponseRedirect(reverse("recipes:detail", args=(recipe.id,)))
+    else:
+        return HttpResponseRedirect(reverse("recipes:detail_shopping_list", args=(recipe.id,)))
+
+def update_shopping_list(request, recipe_id):
+    return display_edit(request, recipe_id, 'shopping_list')
+
+def record_shopping_list(request, recipe_id):
+    return record_edit(request, recipe_id, ShoppingList)
 
 def detail_shopping_list(request, recipe_id):
     if request.method == "POST":
@@ -783,3 +785,6 @@ def detail_shopping_list(request, recipe_id):
         }
 
         return render(request, 'recipes/detail_shopping_list.html', ctx)
+
+def index_shopping_lists(request):
+    return index(request, model_name = 'shopping_list')

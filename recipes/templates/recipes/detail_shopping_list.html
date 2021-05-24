@@ -9,7 +9,9 @@
                 </h1>
             </div>
             <div class='col'>
-                {% include 'recipes/shop_edit_buttons.html' %}
+                {% with recipe.id as list_id %}
+                    {% include 'recipes/shop_edit_buttons.html' %}
+                {% endwith %}
             </div>
         </div>
         <div class='row'>

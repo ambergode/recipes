@@ -29,6 +29,9 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                {% ifequal component.0.ingredient.user user %}
+                    <button type='submit' name='delete_ingredient' value='delete_ingredient_{{ component.0.ingredient.id }}' class='btn btn-danger'>Delete Permanently</button>
+                {% endifequal %}
                 <button type="submit" class="btn btn-primary" name='save_ingredient' value='save_ingredient_{{ component.0.ingredient.id }}'>Save changes</button>
             </div>
             </div>

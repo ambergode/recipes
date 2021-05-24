@@ -7,14 +7,18 @@
 {% block main %}
 <div class='greeting'>
     <h6>
-        {% if user.first_name %}
-            Hi, {{ user.first_name|title }}! Looking for some inspiration?
+        {% if user.is_authenticated %}
+            {% if user.first_name %}
+                Hi, {{ user.first_name|title }}! Looking for some inspiration?
+            {% else %}
+                Hi, {{ user.username|title}}! Looking for some inspiration?
+            {% endif %}
         {% else %}
             Looking for some inspiration? Browse the public recipes. Join to save them for later.
         {% endif %}
-        
     </h6>
 </div>
+<input type='hidden' id='model' value='{{ model }}'>
 <div>
     <form action="{% url 'recipes:index' %}">
         {% csrf_token %}
@@ -28,8 +32,8 @@
         {% if recipe_list %}
                 {% for recipe in recipe_list %}
                 <div class='col-sm'>
-                    <div class='row-md g-1'>
-                        <div class="card">
+                    <div class='row-md'>
+                        <div class="card w-100 m-1">
                             {% if recipe.photo %}
                                 <a href="{% url 'recipes:detail' recipe.id %}">
                                     <img src="{{ recipe.photo.url }}" class="card-img-top" alt="recipe photo">
@@ -46,7 +50,13 @@
                                         </h5>
                                     </div>
                                     <div class="col">
-                                        {% include 'recipes/buttons.html' %}
+                                        {% ifequal 'shopping_list' model %}
+                                            {% with recipe.id as list_id %}
+                                                {% include 'recipes/shop_edit_buttons.html' %}
+                                            {% endwith %}
+                                        {% else %}
+                                            {% include 'recipes/buttons.html' %}
+                                        {% endifequal %}
                                     </div>
                                 </div>
                             </div>
@@ -55,7 +65,14 @@
                 </div>
                 {% endfor %}
         {% else %}
-            <p>No recipes avaialbe.</p>
+            <span>Nothing to see here!
+                {% if user.is_authenticated %}
+                    Would you like to <a href="{% url 'recipes:create_recipe' %}">add something new</a>?
+                {% else %}
+                    Would you like to <a href="{% url 'login' %}?next={{request.path}}">log in</a> to see all of your lists and recipes?
+                    Not a user yet? <a href="/register?next={{request.path}}">Register here!</a>
+                {% endif %}
+            </span>
         {% endif %}
     </div>
 </div>

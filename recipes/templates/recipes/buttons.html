@@ -4,7 +4,6 @@
             <form name="edit_recipe" action="{% url 'recipes:display_edit_recipe' recipe.id %}?next={{request.path}}" method="post">
                 {% csrf_token %}
                 <input type='submit' value="Edit" class="btn-sm btn-light">
-                <input type="hidden" id="recipe_id" value="{{ recipe.id }}">
             </form>
             {% include 'recipes/fav_shop_plan_bar.html' %}
         </div>
