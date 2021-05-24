@@ -6,20 +6,21 @@
 
 {% block main %}
 
-    {% if error_message %}
-        <div class='row'>
-            <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                {{ error_message }} or update <a href="{% url 'recipes:detail' recipe.id %}">{{ recipe.name }}</a>. 
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        </div>
-    {% endif %}
-
     <div class='d-flex justify-content-center'>
         <form action = "{% url 'recipes:create_recipe' %}" method="post">
             {% csrf_token %}
-            <input type="text" value="{{ recipe.name }}" autocomplete="off" name = "recipe_name">
-            <input type="submit" value="Add recipe">
+            <div>
+                What would you like to create?
+                <input type="radio" id="model_recipe" name="model" value="recipe" checked>
+                <label for="model_recipe">Recipe</label>
+                <input type="radio" id="model_shopping_list" name="model" value="shopping_list">
+                <label for="recipe">Shopping List</label>
+            </div>
+            <br>
+            <div>
+                <input type="text" value="{{ recipe.name }}" autocomplete="off" name = "recipe_name">
+                <input type="submit" value="Create!">
+            </div>
         </form>
     </div>
     

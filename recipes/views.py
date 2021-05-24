@@ -10,8 +10,8 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 
 
-from .models import Recipe, Ingredient, IngQuant, Step, Favorites, Shop, Plan
-from .models import VOLUME, WEIGHT, UNIT, UNIT_CHOICES, MEAL_CHOICES, CATEGORY_CHOICES
+from .models import Recipe, Ingredient, IngQuant, Step, Favorites, Shop, Plan, ShoppingList
+from .models import VOLUME, WEIGHT, UNIT, UNIT_CHOICES, MEAL_CHOICES, CATEGORY_CHOICES, UNIT_DICT, CATEGORY_DICT
 from .convert_units import convert_units, get_smaller_unit
 from .forms import MealForm, UnitForm, CategoryForm, RecipePhotoForm
 
@@ -42,29 +42,78 @@ def index_all(request):
 
 @login_required
 def detail(request, recipe_id):
+
+    def record_nutrient_value(nutrient, ingredient, in_grams, nutrition):
+        # nutrient values stored in database as g or mg per 100g
+        nutrient_value = getattr(ingquant.ingredient, nutrient)
+        # calculate the value of that nutrient in that recipe
+        # multiply converted inquant quantity by the nutrient/100g
+        value = float(in_grams) * float(nutrient_value) / 100.0
+        # add value to nutrition
+        nutrition[nutrient] += value
+        # If an ingredient belongs to a user, add a note that the nutrition information is not verified
+        if ingquant.ingredient.user != None:
+            if ingquant.ingredient not in unverified:
+                unverified.append(ingquant.ingredient)
+        return value
+
     if request.method == "POST":
         return HttpResponseRedirect(reverse("recipes:detail", kwargs= {"recipe_id": recipe_id,}))
     else:
         recipe = get_object_or_404(Recipe, pk = recipe_id)
+
+        nutrition = {
+            'calories': 0,
+            'fat': 0,
+            'satfats': 0,
+            'transfats': 0, 
+            'monounsatfats': 0,
+            'polyunsatfats': 0, 
+            'cholesterol': 0, 
+            'sodium': 0,
+            'carbs': 0,
+            'fiber': 0,
+            'sugar': 0,
+            'protein': 0,
+        }
+        uncounted = []
+        unverified = []
 
         ingquants = recipe.get_ingquants()
         ingquantsAndUnits = []
         for ingquant in ingquants:
             unit = ingquant.unitDisplay()
             ingquantsAndUnits.append((ingquant, unit))
-
-
-        # TODO: make nutrition reflect actual recipe
-        nutrition = {
-            'calories': 100,
-            'fat': 5,
-            'satfat': 3
-        }
-        uncounted = (
-            'cookies',
-            'cakes'
-        )
-        # If an ingredient belongs to a user, add a note that the nutrition information is not verified
+            # get nutrition information and add to total
+            for nutrient in nutrition.keys(): # for each nutrient in nutrition
+                # convert ingquant quantity to grams
+                in_grams = convert_units(ingquant.quantity, ingquant.unit, "g") 
+                # if convert_unit returns -1, conversion not possible
+                if in_grams <= 0 and ingquant.ingredient.weight_per_serving != 0 and ingquant.ingredient.weight_per_serving != None:
+                    # get typical serving information
+                    serving_unit = ingquant.ingredient.typical_serving_unit
+                    serving_quantity =ingquant.ingredient.typical_serving_size
+                    serving_grams = ingquant.ingredient.weight_per_serving
+                    # check if typical serving unit can be converted to the unit in the recipe
+                    convert_to_typical_serving_unit = convert_units(ingquant.quantity, ingquant.unit, serving_unit)
+                    if convert_to_typical_serving_unit > 0:
+                        # convert_to_typical_serving_unit value: quantity in typical serving unit
+                        in_grams = (float(convert_to_typical_serving_unit) * float(serving_grams)) / float(serving_quantity)
+                        record_nutrient_value(nutrient, ingquant.ingredient, in_grams, nutrition)
+                    # if serving_grams is zero or does not exist, no conversion is possible
+                    else:
+                        # add to list of uncounted ingredients
+                        if ingquant.ingredient not in uncounted:
+                            uncounted.append(ingquant.ingredient)
+                        # means the units are not compatible, so no reason to keep going with this one
+                        break
+                else:
+                    record_nutrient_value(nutrient, ingquant.ingredient, in_grams, nutrition)
+        
+        # divide total nutrition by number of servings
+        servings = recipe.servings
+        for nutrient in nutrition.keys():
+            nutrition[nutrient] /= servings      
 
         ctx = {
             'recipe': recipe,
@@ -72,7 +121,8 @@ def detail(request, recipe_id):
             'ingredients': ingquantsAndUnits,
             'total': recipe.get_total_time(),
             'nutrition': nutrition,
-            'uncounted': uncounted
+            'uncounted': uncounted,
+            'unverified': unverified,
         }
 
         return render(request, 'recipes/detail.html', ctx)
@@ -81,27 +131,33 @@ def detail(request, recipe_id):
 def create_recipe(request):
     if request.method == "POST":
         new_recipe = request.POST.get("recipe_name")
+        if request.POST.get('model') == 'recipe':
+            model = Recipe
+        else:
+            model = ShoppingList
         if new_recipe != None:
             new_recipe = new_recipe.lower().strip()
             
             # Check to make sure name is unique
-            if Recipe.objects.filter(name = new_recipe, user = request.user).count() > 0:
+            if model.objects.filter(name = new_recipe, user = request.user).count() > 0:
                 ctx = {
-                    "error_message": "You already have a recipe called " + new_recipe + ". Please use a unique name ",
-                    "recipe": Recipe.objects.filter(name = new_recipe, user = request.user)[0]
+                    "error_message": "You already have something called " + new_recipe + ". Please use a unique name ",
+                    "recipe": model.objects.filter(name = new_recipe, user = request.user)[0]
                 }
                 return render(request, 'recipes/create_recipe.html', ctx) 
                 
             # if unique, create new recipe    
             else:
-                add_recipe = Recipe()
+                add_recipe = model()
                 add_recipe.name = new_recipe
                 add_recipe.user = request.user
                 add_recipe.save()
-                
-        return HttpResponseRedirect(reverse("recipes:display_edit_recipe", kwargs= { "recipe_id": add_recipe.id, }))
+        if model == Recipe:     
+            return HttpResponseRedirect(reverse("recipes:display_edit_recipe", kwargs= { "recipe_id": add_recipe.id, }))
+        else: 
+            return HttpResponseRedirect(reverse("recipes:update_shopping_list", kwargs= { "recipe_id": add_recipe.id, }))
     else:
-        return render(request, 'recipes/create_recipe.html', context = {})
+        return render(request, 'recipes/create_recipe.html')
 
 
 def get_components(recipe):
@@ -115,12 +171,14 @@ def get_components(recipe):
 
 @login_required
 def display_edit_recipe(request, recipe_id):
-    
     ctx = {  
         "photo_form": RecipePhotoForm(),
         'user_id': request.user.id,
         'new_ing_unit_form': UnitForm(),
         'category_form': CategoryForm(),
+        'unit_choices': UNIT_CHOICES,
+        'category_choices': CATEGORY_CHOICES,
+        'model': 'recipe'
     }
 
     recipe_init = Recipe.objects.get(pk = recipe_id)
@@ -289,25 +347,45 @@ def record_edit_recipe(request, recipe_id):
         
 
 @login_required
-def add_ingredient(request, ingredient_id = None):
+def add_ingredient(request, ingredient_id = None, source = 'recipe'):
 
-    def add_ingredient_helper(ing, recipe, request):
-        if request.POST.get('serving_size') != None:  ing.typical_serving_size = request.POST.get('serving_size')
-        if request.POST.get('choose_unit') != None:  ing.typical_serving_unit = request.POST.get('choose_unit')
-        if request.POST.get('weight_per_serving') != None:  ing.weight_per_serving = request.POST.get('weight_per_serving')
-        if request.POST.get('protein') != None:  ing.protein = request.POST.get('protein')
-        if request.POST.get('fat') != None:  ing.fat = request.POST.get('fat')
-        if request.POST.get('carbs') != None:  ing.carbs = request.POST.get('carbs')
-        if request.POST.get('calories') != None:  ing.calories = request.POST.get('calories')
-        if request.POST.get('sugar') != None:  ing.sugar = request.POST.get('sugar')
-        if request.POST.get('fiber') != None:  ing.fiber = request.POST.get('fiber')
-        if request.POST.get('sodium') != None:  ing.sodium = request.POST.get('sodium')
-        if request.POST.get('cholesterol') != None:  ing.cholesterol = request.POST.get('cholesterol')
-        if request.POST.get('transfats') != None:  ing.transfats = request.POST.get('transfats')
-        if request.POST.get('satfats') != None:  ing.satfats = request.POST.get('satfats')
-        if request.POST.get('monounsatfats') != None:  ing.monounsatfats = request.POST.get('monounsatfats')
-        if request.POST.get('polyunsatfats') != None:  ing.polyunsatfats = request.POST.get('polyunsatfats')
+    def add_ingredient_helper(ing_id, ing, recipe, request):
+
+        if request.POST.get('category' + '_' + str(ing_id)) != None:
+            key = request.POST.get('category' + '_' + str(ing_id))
+            ing.category = CATEGORY_DICT[key]
+        if request.POST.get('unit' + '_' + str(ing_id)) != None:
+            ing.typical_serving_unit = request.POST.get('unit' + '_' + str(ing_id))
+        if request.POST.get('serving_size' + '_' + str(ing_id)) != None:
+            ing.typical_serving_size = request.POST.get('serving_size' + '_' + str(ing_id))
+        if request.POST.get('weight_per_serving' + '_' + str(ing_id)) != None:
+            ing.weight_per_serving = request.POST.get('weight_per_serving' + '_' + str(ing_id))
         
+        if request.POST.get('protein' + '_' + str(ing_id)) != None:
+            ing.protein = request.POST.get('protein' + '_' + str(ing_id))
+        if request.POST.get('fat' + '_' + str(ing_id)) != None:
+            ing.fat = request.POST.get('fat' + '_' + str(ing_id))
+        if request.POST.get('carbs' + '_' + str(ing_id)) != None:
+            ing.carbs = request.POST.get('carbs' + '_' + str(ing_id))
+        if request.POST.get('calories' + '_' + str(ing_id)) != None:
+            ing.calories = request.POST.get('calories' + '_' + str(ing_id))
+        if request.POST.get('sugar' + '_' + str(ing_id)) != None:
+            ing.sugar = request.POST.get('sugar' + '_' + str(ing_id))
+        if request.POST.get('fiber' + '_' + str(ing_id)) != None:
+            ing.fiber = request.POST.get('fiber' + '_' + str(ing_id))
+        if request.POST.get('sodium' + '_' + str(ing_id)) != None:
+            ing.sodium = request.POST.get('sodium' + '_' + str(ing_id))
+        if request.POST.get('cholesterol' + '_' + str(ing_id)) != None:
+            ing.cholesterol = request.POST.get('cholesterol' + '_' + str(ing_id))
+        if request.POST.get('transfats' + '_' + str(ing_id)) != None:
+            ing.transfats = request.POST.get('transfats' + '_' + str(ing_id))
+        if request.POST.get('satfats' + '_' + str(ing_id)) != None:
+            ing.satfats = request.POST.get('satfats' + '_' + str(ing_id))
+        if request.POST.get('monounsatfats' + '_' + str(ing_id)) != None:
+            ing.monounsatfats = request.POST.get('monounsatfats' + '_' + str(ing_id))
+        if request.POST.get('polyunsatfats' + '_' + str(ing_id)) != None:
+            ing.polyunsatfats = request.POST.get('polyunsatfats' + '_' + str(ing_id))
+
         ing.user = request.user
         ing.recipe = recipe
         
@@ -315,12 +393,16 @@ def add_ingredient(request, ingredient_id = None):
         return ing
 
     # identify the recipe
-    recipe_id = request.POST['recipe_id']
-    recipe = Recipe.objects.get(pk = recipe_id)
+    recipe_id = request.POST.get('recipe_id')
+    model = request.POST.get('model')
+    if model == 'shopping_list':
+        recipe = ShoppingList.objects.get(pk = recipe_id)
+    else:
+        recipe = Recipe.objects.get(pk = recipe_id)
     
     # initialize variables
-    quantity = None
-    unit = None
+    quantity = 0
+    unit = 'gram'
 
     if ingredient_id != None:
         ingredient_name = request.POST['add_ingredient_name_' + ingredient_id].strip().lower()
@@ -333,7 +415,7 @@ def add_ingredient(request, ingredient_id = None):
         # delete old inquant
         ingquant.delete()
     else:
-        ingredient_name = request.POST['add_ingredient_name'].strip().lower()
+        ingredient_name = request.POST['add_ingredient_name_new'].strip().lower()
     
     # personalize ingredient name
     personalized_ingredient_name = "my " + ingredient_name
@@ -341,6 +423,7 @@ def add_ingredient(request, ingredient_id = None):
 
     # check to see if the ingredient name is in the database
     if Ingredient.objects.filter(ingredient = ingredient_name).count() != 0:
+        ing_id = Ingredient.objects.filter(ingredient = ingredient_name)[0].id
         # if the ingredient name is not yet personalized
         # create a new personalized object
         if ingredient_name[0:3] != 'my ':
@@ -354,16 +437,17 @@ def add_ingredient(request, ingredient_id = None):
         else:
             # get the already personalized object
             ingredient = Ingredient.objects.filter(ingredient = ingredient_name)[0]
-        added_ingredient = add_ingredient_helper(ingredient, recipe, request)
+        added_ingredient = add_ingredient_helper(ing_id, ingredient, recipe, request)
     # check to see if the personalized name is in the database
-    elif Ingredient.objects.filter(ingredient = personalized_ingredient_name).count() !=0:
+    elif Ingredient.objects.filter(ingredient = personalized_ingredient_name).count() != 0:
+        ing_id = Ingredient.objects.filter(ingredient = personalized_ingredient_name)[0].id
         # if the personalized ingredient already exists in the system
         ingredient = Ingredient.objects.filter(ingredient = personalized_ingredient_name)[0]
-        added_ingredient = add_ingredient_helper(ingredient, recipe, request)
+        added_ingredient = add_ingredient_helper(ing_id, ingredient, recipe, request)
     # otherwise create a new ingredient
     else:
         ingredient = Ingredient(ingredient = ('my ' + ingredient_name))
-        added_ingredient = add_ingredient_helper(ingredient, recipe, request)
+        added_ingredient = add_ingredient_helper('new', ingredient, recipe, request)
 
     components_ingredients = []
     for component in recipe.get_ingquants():
@@ -375,16 +459,21 @@ def add_ingredient(request, ingredient_id = None):
             ingredient = added_ingredient, 
             quantity = quantity,
             unit = unit,
-            recipe = Recipe.objects.get(pk=recipe_id),
             )
+        if source == 'shopping_list':
+            new_ingquant.shopping_list = ShoppingList.objects.get(pk=recipe_id)
+        else:
+            new_ingquant.recipe = Recipe.objects.get(pk=recipe_id)
         new_ingquant.save()
     else:
         update_ingquant = IngQuant.objects.filter(ingredient = added_ingredient.id, recipe = recipe)[0]
         update_ingquant.quantity = quantity
         update_ingquant.unit = unit
         update_ingquant.save()
-    
-    return HttpResponseRedirect(reverse("recipes:display_edit_recipe", args=(recipe_id,)))
+    if source == 'shopping_list':
+        return HttpResponseRedirect(reverse("recipes:update_shopping_list", args=(recipe_id,)))
+    else:
+        return HttpResponseRedirect(reverse("recipes:display_edit_recipe", args=(recipe_id,)))
 
 
 @login_required
@@ -411,7 +500,7 @@ def shopping(request):
             if smaller == ing.unit.lower():
                 convert_quantity = convert_units(ing.quantity, ing.unit, ingquant.unit)
                 new_ingquant = IngQuant()
-                new_ingquant.quantity = round(float(ingquant.quantity) + convert_quantity, 2) 
+                new_ingquant.quantity = round(float(ingquant.quantity) + float(convert_quantity), 2) 
                 new_ingquant.unit = ingquant.unit
                 
             elif smaller == ingquant.unit.lower():
@@ -439,8 +528,13 @@ def shopping(request):
     list_ingredients = {}
     user = request.user
     for shop in Shop.objects.filter(user = user):
-        recipe = shop.recipe
-        query = recipe.get_ingquants()
+        if shop.recipe:
+            recipe = shop.recipe
+            query = recipe.get_ingquants()
+        else:
+            shopping_list = shop.shopping_list
+            query = shopping_list.get_ingquants()
+        
         for ingquant in query:
             if str(ingquant.ingredient) in list_ingredients.keys():
                 # for however many ingquants with the same ingredient
@@ -466,8 +560,23 @@ def shopping(request):
                 additional_values.remove(list_ingredients[ingredient][0])
                 for value in additional_values:
                     shopping[category].append(value)
-        
-    return render(request, 'recipes/shopping.html', {"shopping": shopping})
+
+    shopping_lists = []
+    lists = ShoppingList.objects.filter(user=request.user)
+    for each in lists:
+        ingquants = each.get_ingquants()
+        ingredients = []
+        for ingquant in ingquants:
+            ingredients.append(ingquant)
+        shopping_lists.append([each, ingredients])
+    
+    context = {
+        "shopping": shopping, 
+        'shopping_lists': shopping_lists,
+        'user_id': request.user.id,
+    }
+
+    return render(request, 'recipes/shopping.html', context)
     
 
 @login_required
@@ -479,8 +588,13 @@ def planning(request):
 def button_ajax(request):
     data = {'success': False} 
     if request.method=='POST':
+        model = request.POST.get('model')
+        if model == 'shopping_list':
+            model_update = ShoppingList
+        else:
+            model_update = Recipe
         recipe_id = request.POST.get('recipe_id')
-        recipe = Recipe.objects.get(pk = recipe_id)
+        recipe = model_update.objects.get(pk = recipe_id)
         action = request.POST.get('tag')
         action_dict = {
             'shop': Shop,
@@ -492,10 +606,17 @@ def button_ajax(request):
 
         model = action_dict[action]
         
-        match = model.objects.filter(recipe = recipe, user = user)
+        if model_update == ShoppingList:
+            match = model.objects.filter(shopping_list = recipe, user = user)
+        else:
+            match = model.objects.filter(recipe = recipe, user = user)
+
         if match.count() == 0:
             inst = model()
-            inst.recipe = recipe
+            if model_update == ShoppingList:
+                inst.shopping_list = recipe
+            else:
+                inst.recipe = recipe
             inst.user = user
             inst.save()
             data['success'] = True
@@ -553,3 +674,112 @@ def delete_recipe(request, recipe_id):
 def cancel(request):
     valuenext = request.POST.get('next')
     return HttpResponseRedirect(valuenext)
+
+def update_shopping_list(request, recipe_id):
+    ctx = {  
+        'user_id': request.user.id,
+        'unit_choices': UNIT_CHOICES,
+        'category_choices': CATEGORY_CHOICES,
+        'model': 'shopping_list'
+    }
+
+    recipe = ShoppingList.objects.get(pk = recipe_id)
+    
+    ctx['recipe'] = recipe
+    ctx['recipe_id'] = recipe.id
+
+    ctx["components"] = get_components(recipe)
+
+    ingredients = None
+    searched = False
+    url_parameter = request.GET.get("q")
+    ctx["search"] = url_parameter
+    if url_parameter:
+        url_parameters = url_parameter.split()
+        args = []
+        for param in url_parameters:
+            param = param.strip(", /-")
+            args.append(Q(ingredient__icontains=param))
+        # need to only return ingredients that are public or belong to the user
+        ingredients = Ingredient.objects.filter(*args).filter(Q(user = None) | Q(user = request.user))
+        ctx["ingredients"] = ingredients
+
+    if request.is_ajax():
+        searched = True
+        if ctx['ingredients'].count() == 0:
+            # get ready to create a new ingredient
+            ctx['searched'] = searched
+            template = loader.get_template('recipes/ingredient_list.html')
+            context = ctx
+            html = template.render(context, request)
+        else:
+            ctx['searched'] = searched
+            template = loader.get_template('recipes/ingredient_list.html')
+            context = ctx
+            html = template.render(context, request)
+        data_dict = {
+            "html_from_view": html, 
+        }
+        return JsonResponse(data=data_dict, safe=False)
+
+    return render(request, 'recipes/edit_shopping_list.html', context = ctx)
+
+def record_shopping_list(request, recipe_id):
+    recipe = ShoppingList.objects.get(pk = recipe_id)
+    recipe.user = request.user
+    recipe.name = normalize(request.POST.get('name'))
+    recipe.description = request.POST.get('description')
+    
+    added_components = recipe.get_ingquants()
+    components_ingredients = []
+    for component in added_components:
+        components_ingredients.append(component.ingredient.id)
+        new_quantity = request.POST.get('quantity_' + str(component.id), None)
+        if new_quantity != None:
+            component.quantity = new_quantity
+        new_unit = request.POST.get('name_' + str(component.id) +"-choose_unit", None)
+        if new_unit != None:
+            component.unit = new_unit
+        component.save()
+
+    recipe.save()
+
+    if request.POST.get('add_to_recipe') != None:
+        added_ingredient = Ingredient.objects.filter(ingredient = request.POST['ingredient_name'])
+        if added_ingredient[0].id not in components_ingredients:
+            ing = IngQuant(
+                ingredient = added_ingredient[0],
+                shopping_list = recipe
+            )
+            ing.save()
+        # no else - alredy added to ingredients list
+        return HttpResponseRedirect(reverse("recipes:update_shopping_list", args=(recipe.id,)))
+    
+    if request.POST.get('add_ingredient') != None:
+        return add_ingredient(request, source='shopping_list')
+    
+    if request.POST.get('save_ingredient') != None:
+        ingredient_id = request.POST.get('save_ingredient')[16:]
+        return add_ingredient(request, ingredient_id, source='shopping_list')
+ 
+    return HttpResponseRedirect(reverse("recipes:detail_shopping_list", args=(recipe.id,)))
+
+def detail_shopping_list(request, recipe_id):
+    if request.method == "POST":
+        return HttpResponseRedirect(reverse("recipes:detail_shopping_list", kwargs= {"recipe_id": recipe_id,}))
+    else:
+        shopping_list = get_object_or_404(ShoppingList, pk = recipe_id)
+
+        ingquants = shopping_list.get_ingquants()
+        ingquantsAndUnits = []
+        for ingquant in ingquants:
+            unit = ingquant.unitDisplay()
+            ingquantsAndUnits.append((ingquant, unit))
+
+        ctx = {
+            'recipe': shopping_list,
+            'ingredients': ingquantsAndUnits,
+            'shopping_list': [shopping_list]
+        }
+
+        return render(request, 'recipes/detail_shopping_list.html', ctx)

@@ -1,0 +1,17 @@
+{% load recipe_extras %}
+<div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
+    <form name="edit_list" action="{% url 'recipes:update_shopping_list' shopping_list.0.id %}?next={{request.path}}" method="post">
+        {% csrf_token %}
+        <input type='submit' value="Edit" class="btn-sm btn-light">
+        <input type="hidden" name='recipe_id' id="recipe_id" value="{{ shopping_list.0.id }}">
+    </form> 
+    <form id="shop_{{ shopping_list.0.id }}" name="shop" method="POST">
+        {% csrf_token %}
+        {% get_status 'shop' 'shopping_list' shopping_list.0.id request as shop_status %}
+        {% if shop_status %}
+            <button type="submit" name='sub_shop_{{ shopping_list.0.id }}' id='sub_shop_{{ shopping_list.0.id }}' class="btn shop"><i class="fas fa-store" style="color:#006300"></i></i></button>
+        {% else %}
+            <button type="submit" name='sub_shop_{{ shopping_list.0.id }}' id='sub_shop_{{ shopping_list.0.id }}' class="btn shop"><i class="fas fa-store-slash" style="color:grey"></i></button>
+        {% endif %}
+    </form>
+</div>

@@ -23,7 +23,7 @@ UNIT_CHOICES = (
     ("CUP", "cup"),
     ("TBSP", "tbsp"),
     ("TSP", "tsp"),
-    ("WTOZ", "wt oz"),
+    ("WTOZ", "oz"),
     ("FLOZ", "fl oz"),
     ("ML", "ml"),
     ("CAN", "can"),
@@ -33,43 +33,122 @@ UNIT_CHOICES = (
     ("LB", "lb"),
     ("PINT", 'pint'),
     ("QUART", 'quart'),
-    ("UNIT", "item"),
+    ("UNIT", ""),
     ("UNDETERMINED", "?"),
 )
 
 CATEGORY_CHOICES = (
     ("ALCOHOLIC_BEVERAGES", 'alcoholic beverages'),
     ("BABY_FOODS", 'baby foods'),
-    ("BAKED_PRODUCTS", 'baked goods'),
-    ("BEEF_PRODUCTS", 'beef'),
+    ("BAKED_PRODUCTS", 'baked products'),
+    ("BEEF_PRODUCTS", 'beef products'),
     ("BEVERAGES", 'beverages'),
     ("BREAKFAST_CEREALS", 'breakfast cereals'),
-    ("CEREAL_GRAINS_AND_PASTA", 'cereals, grains, and pasta'),
-    ("DAIRY_AND_EGG_PRODUCTS", 'dairy and eggs'),
-    ("FAST_FOODS", 'fastfoods'),
+    ("CEREAL_GRAINS_AND_PASTA", 'cereal grains and pasta'),
+    ("DAIRY_AND_EGG_PRODUCTS", 'dairy and egg products'),
+    ("FAST_FOODS", 'fast foods'),
     ("FATS_AND_OILS", 'fats and oils'),
-    ("FINFISH_AND_SHELLFISH_PRODUCTS", 'fish and shellfish'),
+    ("FINFISH_AND_SHELLFISH_PRODUCTS", 'finfish and shellfish products'),
     ("FRUITS_AND_FRUIT_JUICES", 'fruits and fruit juices'),
-    ("LAMB_VEAL_AND_GAME_PRODUCTS", 'lamb, veal, and game'),
-    ("LEGUMES_AND_LEGUME_PRODUCTS", 'legumes'),
-    ("MEALS_ENTREES_AND_SIDE_DISHES", 'prepared meals'),
-    ("NUT_AND_SEED_PRODUCTS", 'nut and seed'),
-    ("PORK_PRODUCTS", 'pork'),
-    ("POULTRY_PRODUCTS", 'poultry'),
+    ("LAMB_VEAL_AND_GAME_PRODUCTS", 'lamb, veal, and game products'),
+    ("LEGUMES_AND_LEGUME_PRODUCTS", 'legumes and legume products'),
+    ("MEALS_ENTREES_AND_SIDE_DISHES", 'meals, entrees, and side dishes'),
+    ("NUT_AND_SEED_PRODUCTS", 'nut and seed products'),
+    ("PORK_PRODUCTS", 'pork products'),
+    ("POULTRY_PRODUCTS", 'poultry products'),
     ("RESTAURANT_FOODS", 'restaurant foods'),
     ("SAUSAGES_AND_LUNCHEON_MEATS", 'sausages and lunch meats'),
     ("SNACKS", 'snacks'),
-    ("SOUPS_SAUCES_AND_GRAVIES", 'soups and sauces'),
+    ("SOUPS_SAUCES_AND_GRAVIES", 'soups, sauces, and gravies'),
     ("SPICES_AND_HERBS", 'spices and herbs'),
     ("SWEETS", 'sweets'),
-    ("VEGETABLES_AND_VEGETABLE_PRODUCTS", 'vegetables'),
+    ("VEGETABLES_AND_VEGETABLE_PRODUCTS", 'vegetables and vegetable products'),
+    ("AMERICAN_INDIAN_ALASKAN_NATIVE_FOODS", 'american indian/alaska native foods'),
     ("OTHER", 'other'),
 )
 
+UNIT_DICT = {
+    "gram" : "GRAM",
+    "cup" : "CUP",
+    "tbsp" : "TBSP",
+    "tsp" : "TSP",
+    "oz" : "WTOZ",
+    "fl oz" : "FLOZ",
+    "ml" : "ML",
+    "can" : "CAN",
+    "gallon" : "GALLON",
+    "kilo" : "KILO",
+    "liter" : "LITER",
+    "lb" : "LB",
+    "pint" : "PINT",
+    "quart" : "QUART",
+    "" : "UNIT",
+    "?" : "UNDETERMINED",
+}
 
-class Recipe(models.Model):
+
+CATEGORY_DICT = {
+    "ALCOHOLIC_BEVERAGES": 'alcoholic beverages',
+    "BABY_FOODS": 'baby foods',
+    "BAKED_PRODUCTS": 'baked products',
+    "BEEF_PRODUCTS": 'beef products',
+    "BEVERAGES": 'beverages',
+    "BREAKFAST_CEREALS": 'breakfast cereals',
+    "CEREAL_GRAINS_AND_PASTA": 'cereal grains and pasta',
+    "DAIRY_AND_EGG_PRODUCTS": 'dairy and egg products',
+    "FAST_FOODS": 'fast foods',
+    "FATS_AND_OILS": 'fats and oils',
+    "FINFISH_AND_SHELLFISH_PRODUCTS": 'finfish and shellfish products',
+    "FRUITS_AND_FRUIT_JUICES": 'fruits and fruit juices',
+    "LAMB_VEAL_AND_GAME_PRODUCTS": 'lamb, veal, and game products',
+    "LEGUMES_AND_LEGUME_PRODUCTS": 'legumes and legume products',
+    "MEALS_ENTREES_AND_SIDE_DISHES": 'meals, entrees, and side dishes',
+    "NUT_AND_SEED_PRODUCTS": 'nut and seed products',
+    "PORK_PRODUCTS": 'pork products',
+    "POULTRY_PRODUCTS": 'poultry products',
+    "RESTAURANT_FOODS": 'restaurant foods',
+    "SAUSAGES_AND_LUNCHEON_MEATS": 'sausages and lunch meats',
+    "SNACKS": 'snacks',
+    "SOUPS_SAUCES_AND_GRAVIES": 'soups, sauces, and gravies',
+    "SPICES_AND_HERBS": 'spices and herbs',
+    "SWEETS": 'sweets',
+    "VEGETABLES_AND_VEGETABLE_PRODUCTS": 'vegetables and vegetable products',
+    "AMERICAN_INDIAN_ALASKAN_NATIVE_FOODS": 'american indian/alaska native foods',
+    "OTHER": 'other',
+}
+
+class CommonInfo(models.Model):
     name = models.CharField(max_length = 256)
     description = models.CharField(max_length = 1024, null = True, blank = True)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    class Meta:
+        abstract = True
+
+    @property
+    def in_shopping(self):
+        if Shop.objects.filter(recipe = self).count() > 0:
+            return True
+        else:
+            return False
+
+    @property
+    def in_plan(self):
+        if Plan.objects.filter(recipe = self).count() > 0:
+            return True
+        else:
+            return False
+    
+    def __str__(self):
+        return self.name
+
+
+class ShoppingList(CommonInfo):
+    
+    def get_ingquants(self):
+        return IngQuant.objects.filter(shopping_list = self.id)
+
+class Recipe(CommonInfo):
     prep_time = models.IntegerField(null = True, blank = True)
     cook_time = models.IntegerField(null = True, blank = True)
     servings = models.IntegerField(default = 4)
@@ -79,8 +158,6 @@ class Recipe(models.Model):
     author = models.CharField(max_length = 150, default = "Anonymous")
     # if others are allowed to see the recipe
     public = models.BooleanField(default = False)
-    # The user who uploaded the recipe
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     # if the recipe is the original (false) or a personalized version of another (true)
     personalized = models.BooleanField(default = False)
     
@@ -96,35 +173,15 @@ class Recipe(models.Model):
         else:
             return '--'
     
+    def get_ingquants(self):
+        return IngQuant.objects.filter(recipe = self.id)
 
     def get_steps(self):
         return Step.objects.filter(recipe = self.id).order_by('order')
 
 
-    def get_ingquants(self):
-        return IngQuant.objects.filter(recipe = self.id)
-
-
-    def __str__(self):
-        return self.name
-
-    
     def favorite(self, user_id):
         if Favorites.objects.filter(self, user_id = user_id).count() > 0:
-            return True
-        else:
-            return False
-
-    @property
-    def in_shopping(self):
-        if Shop.objects.filter(recipe = self).count() > 0:
-            return True
-        else:
-            return False
-
-    @property
-    def in_plan(self):
-        if Plan.objects.filter(recipe = self).count() > 0:
             return True
         else:
             return False
@@ -199,6 +256,7 @@ class IngQuant(models.Model):
     ingredient = models.ForeignKey(Ingredient, on_delete = models.CASCADE)
     quantity = models.DecimalField(max_digits = 7, decimal_places = 2, default = 0)
     recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE, null = True, blank = True)
+    shopping_list = models.ForeignKey(ShoppingList, on_delete = models.CASCADE, null = True, blank = True)
 
     unit = models.CharField(
         max_length = 13,
@@ -223,14 +281,16 @@ class Favorites(models.Model):
         return str(self.recipe)
 
 class Shop(models.Model):
-    recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE)
+    recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE, null = True, blank = True)
     user = models.ForeignKey(User, on_delete = models.CASCADE) 
+    shopping_list = models.ForeignKey(ShoppingList, on_delete = models.CASCADE, null = True, blank = True)
 
     def __str__(self):
         return str(self.recipe)
 
 class Plan(models.Model):
-    recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE)
+    recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE, null = True, blank = True)
+    shopping_list = models.ForeignKey(ShoppingList, on_delete = models.CASCADE, null = True, blank = True)
     user = models.ForeignKey(User, on_delete = models.CASCADE)
 
     def __str__(self):

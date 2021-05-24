@@ -4,7 +4,14 @@ $(function(){ // this will be called when the DOM is ready
     const user_input = $("#user-input")
     const search_icon = $('#search-icon')
     const recipe_id = $('#recipe_id').val()
-    const endpoint = '/recipes/' + String(recipe_id) + '/edit/'
+    let endpoint = undefined
+    
+    if ($('#model').val() == 'shopping_list'){
+        endpoint = '/recipes/' + String(recipe_id) + '/update_shopping_list/'
+    } else {
+        endpoint = '/recipes/' + String(recipe_id) + '/edit/'
+    }
+
     const delay_by_in_ms = 700
     let scheduled_function = false
     

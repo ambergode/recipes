@@ -1,6 +1,7 @@
 import csv
 import sqlite3
 import os
+from decimal import Decimal
 
 from recipes.models import Ingredient
 
@@ -95,9 +96,61 @@ def load_database(location, filename):
 
 def load_django_database(): 
 
+    VOLUME = ['cup', 'tablespoon', 'teaspoon', 'liter', 'milliliter', 'gallon', 'pint', 'fl oz', 'quart', 'tablespoons', 'oz', ' g ', ' g)']
+                
+    def extract_unit_helper(description):
+        for measure in VOLUME:
+            # see if the measurement is in the string - returns -1 if not found
+            i = description.lower().find(measure) 
+            if i != -1:
+                # print('extracting unit')
+                # extract the number before the measurement
+                j = i - 2
+                while j >= 0:
+                    # print(description[j])
+                    if description[j] in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '/']:
+                        j -= 1
+                    else:
+                        break
+                # print('j = ', j, 'i = ', i)
+                if j == i - 2:
+                    quantity = "" # no quantity can be extracted
+                else:
+                    num = description[j+1:i]
+                    if num.strip() == '.' or num.strip() == '/':
+                        num = ''
+                    elif num.find('/') != -1:
+                        div = num.find('/')
+                        num1 = num[:div].strip()
+                        num2 = num[div+1:].strip()
+                        num = Decimal(str(int(num1) / int(num2)))
+                    quantity = num
+                unit = measure.strip()
+                # print(quantity, unit)
+                return (quantity, unit)
+        return -1 # if no unit can be extracted
+
+    # pick which unit to use - prefer measurement in volume
+    def decide_unit(serving_info_init):
+        # check if name is a volume measurement
+        if serving_info_init[0].lower().strip() not in VOLUME:
+            # if not, check if a unit and quantity can be extracted from the description
+            quantity_unit = extract_unit_helper(serving_info_init[1])
+            if quantity_unit != -1 and quantity_unit[1] in VOLUME:
+                if quantity_unit[0] == "":
+                    return [quantity_unit[1], serving_info_init[2], serving_info_init[3]]
+                else:
+                    return [quantity_unit[1], quantity_unit[0], serving_info_init[3]]
+            else:
+                return [serving_info_init[0].lower().strip(), serving_info_init[2], serving_info_init[3]]
+        else:
+            return [serving_info_init[0].lower().strip(), serving_info_init[2], serving_info_init[3]]
+
+
     # Select fdc_id from each foundation foods
     # connect to RawFoodDatabase
     conn = sqlite3.connect('RawFoodDatabase.db')
+    print("Connected to database")
     cur = conn.cursor()
 
     cur.execute("SELECT DISTINCT(description), fdc_id FROM food WHERE data_type = 'sr_legacy_food' OR data_type = 'foundation_food'")
@@ -111,7 +164,7 @@ def load_django_database():
     for food_id in food_ids:
     # for i in range(1):        # for troubleshooting only
         # food_id = 168794
-        print("Adding ", food_id)
+       print("Adding ", food_id)
         # name, category
         command = "SELECT DISTINCT(food.description), food_category.description FROM food \
             JOIN food_category ON food_category.id = food.food_category_id \
@@ -126,51 +179,60 @@ def load_django_database():
             JOIN nutrient_incoming_name AS nin ON nin.nutrient_id = food_nutrient.nutrient_id) \
             JOIN nutrient ON nin.nutrient_id = nutrient.id \
             WHERE food.fdc_id = " + str(food_id) + \
-            " AND nin.nutrient_id IN (1093, 1079, 1292, 1004, 1003, 1008, 1293, 1005, 2033, 1258, 1253, 1257, 1063)"
+            " AND nin.nutrient_id IN (1093, 1079, 1292, 1004, 1003, 1008, 1293, 1005, 2033, 1258, 1253, 1257, 1063, 2000)"
         cur.execute(command)
         nutrient_info = cur.fetchall()
 
-        # typical serving size, unit, weight in grams
-        command = "SELECT DISTINCT(measure_unit.name), food_portion.amount, food_portion.gram_weight \
+        # typical serving size, unit (portion description or name), weight in grams
+        command = "SELECT DISTINCT(measure_unit.name), food_portion.modifier, food_portion.amount, food_portion.gram_weight \
             FROM food_portion JOIN measure_unit ON measure_unit.id = food_portion.measure_unit_id \
-            WHERE fdc_id = " + str(food_id) + " LIMIT 1"
+            WHERE fdc_id = " + str(food_id)
         cur.execute(command)
-        serving_info = cur.fetchall()
-        
+        serving_info_init = cur.fetchall()
+            
         # check to make sure food name is not already in database
-        if Ingredient.objects.filter(ingredient = base_info[0][0]):
-            pass
-        else:
+        if Ingredient.objects.filter(ingredient = base_info[0][0]).count() == 0:
             new_food = Ingredient()
             if len(base_info) > 0:
                 new_food.ingredient = base_info[0][0]
                 new_food.category = base_info[0][1]
-            if len(serving_info) > 0:
-                new_food.typical_serving_size = round(serving_info[0][1], 2)
+                
+                if len(serving_info_init) > 0:
+                    for option in serving_info_init:
+                        # print('option:', option)
+                        serving_info = decide_unit(option)
+                        # print('serving info', serving_info)
+                        if serving_info[0] in VOLUME:
+                            break
 
-                # normalize units
-                unit_dict = {
-                    "liter": 'LITER',
-                    "cup": 'CUP',
-                    "gallon": "GALLON",
-                    "pint": "PINT",
-                    "lb": "LB",
-                    "fl oz": "FLOZ",
-                    "oz": "WTOZ",
-                    "quart": "QUART",
-                    "teaspoon": "TSP",
-                    "tablespoon": "TBSP",
-                    "tablespoons": "TBSP",
-                    "undetermined": "UNDETERMINED",
-                }
-                unit = serving_info[0][0].lower().strip()
-                if unit in unit_dict.keys():
-                    unit = unit_dict[unit]
-                else:
-                    unit = "UNIT"
+                    # normalize units
+                    unit_dict = {
+                        "liter": 'LITER',
+                        "cup": 'CUP',
+                        "gallon": "GALLON",
+                        "pint": "PINT",
+                        "lb": "LB",
+                        "fl oz": "FLOZ",
+                        "oz": "WTOZ",
+                        "quart": "QUART",
+                        "teaspoon": "TSP",
+                        "tablespoon": "TBSP",
+                        "tablespoons": "TBSP",
+                        "undetermined": "UNDETERMINED",
+                        'milliliter': 'ML',
+                    }
 
-                new_food.typical_serving_unit = unit
-                new_food.weight_per_serving = round(serving_info[0][2], 2)
+                    # normalize units
+                    unit = serving_info[0]
+                    if unit in unit_dict.keys():
+                        unit = unit_dict[unit]
+                    else:
+                        unit = "UNIT"
+
+                    new_food.typical_serving_size = serving_info[1]
+                    new_food.typical_serving_unit = unit
+                    new_food.weight_per_serving = round(serving_info[2], 2)
+                    # print('serving data:', new_food.typical_serving_size, new_food.typical_serving_unit, new_food.weight_per_serving)
 
             # assign values for each nutrient
             if len(nutrient_info) > 0:
@@ -178,12 +240,15 @@ def load_django_database():
                     if len(nutrient) > 0:
                         nutrient_id = nutrient[0]
                         nutrient_val = round(nutrient[1], 2)
-                        # print(nutrient_val)
                         if nutrient_id == 1003: new_food.protein = nutrient_val
                         elif nutrient_id == 1004: new_food.fat = nutrient_val
                         elif nutrient_id == 1005: new_food.carbs = nutrient_val
                         elif nutrient_id == 1008: new_food.calories = nutrient_val
-                        elif nutrient_id == 1063: new_food.sugar = nutrient_val
+                        elif nutrient_id == 2000 or nutrient_id == 1063: 
+                            if new_food.sugar != 0:
+                                new_food.sugar = max(new_food.sugar, nutrient_val)
+                            else:
+                                new_food.sugar = nutrient_val
                         elif nutrient_id == 1079: new_food.fiber = nutrient_val
                         elif nutrient_id == 1093: new_food.sodium = nutrient_val
                         elif nutrient_id == 1253: new_food.cholesterol = nutrient_val
@@ -192,9 +257,9 @@ def load_django_database():
                         elif nutrient_id == 1292: new_food.monounsatfats = nutrient_val
                         elif nutrient_id == 1293: new_food.polyunsatfats = nutrient_val
                         elif nutrient_id == 2033: new_food.fiber = nutrient_val
-            # print(base_info, nutrient_info, serving_info)
+            
             new_food.save()
-    
+
     return 0
 
 load_django_database()

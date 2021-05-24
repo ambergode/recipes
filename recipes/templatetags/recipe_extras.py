@@ -1,24 +1,36 @@
 from django import template
 
-from ..models import Recipe, Favorites, Plan, Shop
+from ..models import Recipe, Favorites, Plan, Shop, ShoppingList
 
 register = template.Library()
 
 @register.simple_tag
-def get_status(tag, recipe_id, request):
+def get_status(tag, model, recipe_id, request):
     if request.user.is_authenticated:
         current_user = request.user
-        recipe = Recipe.objects.get(pk = recipe_id)
+        if model == 'recipe':
+            model = Recipe
+        else:
+            model = ShoppingList
+        recipe = model.objects.get(pk = recipe_id)
+        
         action_dict = {
             'plan': Plan,
             'shop': Shop,
             'fav': Favorites
         }
+        
         action = action_dict[tag]
-        if action.objects.filter(recipe = recipe, user = current_user).count() > 0:
-            return True
+        if model == Recipe:
+            if action.objects.filter(recipe = recipe, user = current_user).count() > 0:
+                return True
+            else:
+                return False
         else:
-            return False
+            if action.objects.filter(shopping_list = recipe, user = current_user).count() > 0:
+                return True
+            else:
+                return False
     return False
 
 

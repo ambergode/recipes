@@ -1,0 +1,17 @@
+<div class="ingredient_list">
+    <h5>Ingredients:</h5>
+    <table>
+        {% for ingredient in ingredients %}
+        <tr>
+            <td>
+                <input type="checkbox" class='vertical-align-middle' name="ing_checkbox_{{ ingredient.0.ingredient }}">
+            </td>
+            <td>
+                <label for="ing_checkbox_{{ ingredient.0.ingredient }}" class='vertical-align-middle'>    
+                    {{ ingredient.0.quantity|floatformat }} {{ ingredient.1|lower }} {{ ingredient.0.ingredient }}
+                </label>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>

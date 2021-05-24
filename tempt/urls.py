@@ -17,10 +17,12 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf.urls.static import static
 from django.conf import settings
+from . import views
 
 urlpatterns = [
     path('recipes/', include('recipes.urls')),
     path('admin/', admin.site.urls),
+    path('register/', views.register_request, name = 'register'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 #Add Django site authentication urls (for login, logout, password management)

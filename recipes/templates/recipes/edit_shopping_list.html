@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block main %}
+{% load recipe_extras %}
+    <div class='right-align'>
+        <div class='row'>
+            <div class='col g-1'>
+                <form id="shop_{{ recipe.id }}" name="shop" method="POST">
+                    {% csrf_token %}
+                    {% get_status 'shop' 'shopping_list' recipe.id request as shop_status %}
+                    {% if shop_status %}
+                        <button type="submit" name='sub_shop_{{ recipe.id }}' id='sub_shop_{{ recipe.id }}' class="btn shop"><i class="fas fa-store" style="color:#006300"></i></i></button>
+                    {% else %}
+                        <button type="submit" name='sub_shop_{{ recipe.id }}' id='sub_shop_{{ recipe.id }}' class="btn shop"><i class="fas fa-store-slash" style="color:grey"></i></button>
+                    {% endif %}
+                </form>
+            </div>
+            <div class='col g-1'>
+                <form action="{% url 'recipes:delete_recipe' recipe_id %}" method='post'>
+                    {% csrf_token %}
+                    <input type='submit' name='delete_list' id="delete_list" value='Delete List' class='btn-sm btn-danger'>
+                </form>
+            </div>
+            <div class='col g-1'>
+                <form action="{% url 'recipes:cancel' %}" method='post'>
+                    {% csrf_token %}
+                    <input type='hidden' name='next' value='{{request.GET.next}}'>
+                    <input type='submit' name='cancel' value='Cancel' class='btn-sm btn-dark'>
+                </form>
+            </div>
+        </div>
+    </div>
+    <form action="{% url 'recipes:record_shopping_list' recipe_id %}" method="post">
+        {% csrf_token %}
+        <div class='fixed-bottom'>
+            <input type="submit" id="edit_list" value="Update List" class='btn-sm btn-dark btn-block w-100'>  
+        </div>
+        <input type='hidden' name='recipe_id' id='recipe_id' value='{{ recipe.id }}'>
+        <input type='hidden' name='model' id='model' value='shopping_list'>
+        <h3>
+            {% if recipe.name %}
+                <input type='text' name='name' value='{{ recipe.name }}' autocomplete='off'>
+            {% else %}
+                <input type='text' name='name' placeholder="List name" autocomplete='off'>
+            {% endif %}
+        </h3>
+        {% if recipe.description %}
+            <input type='text' name='description' value='{{ recipe.description }}' autocomplete='off'>
+        {% else %}
+            <input type='text' name='description' placeholder="A short description" autocomplete='off'>
+        {% endif %}
+
+        <div class='row'>
+            <div class='col'>
+                
+            </div>
+        </div>
+        {% include 'recipes/update_ing_list.html' %}
+
+    </form>
+{% endblock %}

@@ -104,8 +104,17 @@ for animating blinking search icon */
 }
 
 .add_ing_card {
-    margin-left:20%;
+    display: flex;
+    justify-content: center;
     padding:1em;
+}
+.nutrition_info {
+    max-width:fit-content;
+}
+
+.inner_div {
+    display:inline-block;
+    text-align:left;
 }
 
 .fixed-bottom {
@@ -146,6 +155,14 @@ select {
     margin-left: 5px;
 }
 
-.messages {
-    background-color:red;
+td {
+    padding: 0em 0em .5em .5em;
+}
+
+.vertical-align-top {
+    vertical-align: top;
+}
+
+.smaller {
+    font-size:smaller;
 }

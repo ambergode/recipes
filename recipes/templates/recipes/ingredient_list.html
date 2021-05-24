@@ -12,7 +12,9 @@
                 </div>
             </div>
         {% else %}
-            {% include 'recipes/add_ingredient.html' %}
+            <div class='add_ing_card'>
+                {% include 'recipes/add_ingredient.html' %}
+            </div>
         {% endif %}
     </div>
 {% endif %}

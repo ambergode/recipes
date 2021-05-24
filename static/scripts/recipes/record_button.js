@@ -4,7 +4,8 @@ function record_button (evt, button_type, button_recipe) {
     evt.preventDefault(); 
     const recipe_id = button_recipe;
     const endpoint = "/recipes/button_ajax/";
-    const user_id = JSON.parse(document.getElementById('user_id').textContent);
+    const user_id = $('#user_id').val();
+    const model = $('#model').val();
 
     let symbols_dict = {
         favorite: {
@@ -25,7 +26,7 @@ function record_button (evt, button_type, button_recipe) {
     };
     
     let action = symbols_dict[button_type]
-    console.log(button_type)
+
     $.ajax({
         type: "POST",
         url: endpoint,
@@ -33,7 +34,8 @@ function record_button (evt, button_type, button_recipe) {
             recipe_id: recipe_id, 
             'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val(),
             tag: button_type,
-            user_id: user_id
+            user_id: user_id, 
+            model: model,
         },
         datatype:'json',
         success: function(data) {

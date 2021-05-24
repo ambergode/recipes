@@ -50,12 +50,13 @@
             </button>
             <!-- Add back in if statement once session information set up -->
             <div class="collapse navbar-collapse" id="navbar">
-                <ul class="navbar-nav mr-auto mt-2">
-                    <li class="nav-item"><a class="nav-link" href="{% url 'recipes:index' %}">Recipe List</a></li>
+                <ul class="navbar-nav mr-auto mt-2 d-inline-flex flex-row">
+                    <li class="nav-item"><a class="nav-link" href="{% url 'recipes:index' %}">My Recipes</a></li>
                     {% if user.is_authenticated %}
-                        <li class="nav-item"><a class="nav-link" href="{% url 'recipes:shopping' %}">Shopping List</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{% url 'recipes:planning' %}">Meal Planning</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'recipes:index_all' %}">All Recipes</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'recipes:shopping' %}">Shopping</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'recipes:planning' %}">Planning</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'recipes:create_recipe' %}">Add</a></li>
                     {% endif %}
                 </ul>
                 <ul class="navbar-nav ml-auto mt-2">
@@ -70,6 +71,15 @@
         </nav>
 
         <main class="container">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if message.tags %} {{ message.tags }} {% else %} alert-warning {% endif %} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
             {% block main %}{% endblock %}
         </main>
 

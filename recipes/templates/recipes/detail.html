@@ -24,7 +24,7 @@
     </div>
     <div>
         <div class='row'>
-            <div class='col-sm-auto'>
+            <div class='col-sm-auto g-0'>
                 {{ recipe.snack_or_meal|capfirst }}
             </div>
             {% if recipe.author %}
@@ -49,76 +49,114 @@
         <br>
         <b>Servings:</b> {{ recipe.servings }} serving{{ recipe.servings|pluralize }}
     </p>
-    <div class="ingredient_list">
-        <h5>Ingredients:</h5>
-        <ul class="invisible_bullet">
-            {% for ingredient in ingredients %}
-            <li>
-                <input type="checkbox" name="ing_checkbox">
-                <label for="ing_checkbox">    
-                    {{ ingredient.0.quantity|floatformat }} {{ ingredient.1|lower }}{{ ingredient.0.quantity|pluralize}} {{ ingredient.0.ingredient }}
-                </label>
-            </li>
-            {% endfor %}
-        </ul>
-    </div>  
+    <hr>
+    {% include 'recipes/display_ingredient_list.html' %}  
     {% if steps %}
+        <hr>
         <div class="step_list">
             <h5>Steps:</h5>
-            <ol>
+            <table>
             {% for step in steps %}
-                <li>
-                    <input type="checkbox" name="step_checkbox">
-                    <label for="step_checkbox">    
+                <tr>
+                    <td class='vertical-align-top'>
+                        <input type="checkbox"/>
+                    </td>
+                    <td class='vertical-align-top'>
+                        {{ step.order|add:1 }}.
+                    </td>
+                    <td>
                         {{ step.step }}
-                    </label>
-                </li>
+                    </td>
+                </tr>
             {% endfor %}
-            </ol>
+            </table>
         </div>   
     {% endif %}  
+    <hr>
     {% if recipe.notes %}  
         <div>
             <h5>Notes:</h5>
             <p>{{ recipe.notes }}</p>
         </div>
     {% endif %}
+    <hr>
     {% if nutrition %}
-        <div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>
-                            Nutrition Information
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Calories:</td>
-                        <td>{{ nutrition.calories }}</td>
-                    </tr>
-                    <tr>
-                        <td>Fat:</td>
-                        <td>{{ nutrition.fat }} g</td>
-                    </tr>
-                    <tr>
-                        <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sat Fat:</td>
-                        <td>{{ nutrition.satfat }} g</td>
-                    </tr>
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <th>Items not included</th>
-                    </tr>
+        <div class='row'>
+            <h5>Nutrition Information:</h5>
+            <div class='col-sm-auto'>
+                <table>
+                    <tbody>
+                        <tr>
+                            <td>Calories:</td>
+                            <td>{{ nutrition.calories|floatformat:'0' }}</td>
+                        </tr>
+                        <tr>
+                            <td>Fat:</td>
+                            <td>{{ nutrition.fat|floatformat:'0' }} g</td>
+                        </tr>
+                        <tr>
+                            <td class='indented'>Sat Fat:</td>
+                            <td>{{ nutrition.satfats|floatformat:'0' }} g</td>
+                        </tr>
+                        <tr>
+                            <td class='indented'>Trans Fat:</td>
+                            <td>{{ nutrition.transfats|floatformat:'0' }} g</td>
+                        </tr>
+                        <tr>
+                            <td class='indented'>Monounsaturated Fat:</td>
+                            <td>{{ nutrition.monounsatfats|floatformat:'0' }} g</td>
+                        </tr>
+                        <tr>
+                            <td class='indented'>Polyunsaturated Fat:</td>
+                            <td>{{ nutrition.polyunsatfats|floatformat:'0' }} g</td>
+                        </tr>
+                        <tr>
+                            <td>Cholesterol:</td>
+                            <td>{{ nutrition.cholesterol|floatformat:'0' }} mg</td>
+                        </tr>
+                        <tr>
+                            <td>Sodium:</td>
+                            <td>{{ nutrition.sodium|floatformat:'0' }} mg</td>
+                        </tr>
+                        <tr>
+                            <td>Carbs:</td>
+                            <td>{{ nutrition.carbs|floatformat:'0' }} g</td>
+                        </tr>
+                        <tr>
+                            <td class='indented'>Fiber:</td>
+                            <td>{{ nutrition.fiber|floatformat:'0' }} g</td>
+                        </tr>
+                        <tr>
+                            <td class='indented'>Sugars:</td>
+                            <td>{{ nutrition.sugar|floatformat:'0' }} g</td>
+                        </tr>
+                        <tr>
+                            <td>Protein:</td>
+                            <td>{{ nutrition.protein|floatformat:'0' }} g</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class='col'>
+                <h6>*Items not included</h6>
+                <ul>
                     {% for item in uncounted %}
-                    <tr>
-                        <td>{{ item }}</td>
-                    </tr>
+                        <li>
+                            {{ item }}
+                        </li>
                     {% endfor %}
-                </tfoot>
-            </table>
+                </ul>
+                <h6>*Unverified ingredients</h6>
+                <ul>
+                    {% for item in unverified %}
+                        <li>
+                            {{ item }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
         </div>
+    </div>
     {% endif %}
 {% endblock %}
 

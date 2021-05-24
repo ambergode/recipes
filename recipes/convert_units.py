@@ -18,7 +18,7 @@ id | food | serving_size | serving_unit | serving_weight
 
 VOLUME = ['ml', 'liter', 'tsp', 'tbsp', 'cup', 'floz', 'pint', 'quart', 'gallon']
 WEIGHT = ['g', 'gram', 'kg', 'kilo', 'wtoz', 'lb']
-UNIT = ["", "can"]
+UNIT = ["", "item"]
 TEMPERATURE = ['f', 'c']
 
 # eventually - convert from metric to American?
@@ -137,6 +137,8 @@ def test_convert_units():
         "convert_units(5, 'liter', 'unit')": (convert_units(5, 'liter', 'unit'), -1),
         "convert_units(5, 'gallon', 'f')": (convert_units(5, 'gallon', 'f'), -1),
         "convert_units(5, 'ml', 'g')": (convert_units(5, 'ml', 'g'), -1),
+        # non-mass non-volume conversion to self
+        "convert_units(5, 'item', 'item')": (convert_units(5, 'item', 'item'), 5),
         # non-number quantity
         "convert_units('q', 'ml', 'lb')": (convert_units('q', 'ml', 'lb'), -1),
         "convert_units('105h', 'g', 'kg')": (convert_units('105h', 'g', 'kg'), -1),
@@ -182,7 +184,7 @@ def test_convert_units():
 
 def convert_units(quantity, unit_from, unit_to):    
     ''' Takes a quantity with up to two decimal places,
-    the unit to conver from, and the unit to conver to
+    the unit to conver from, and the unit to convert to
 
     Poduces a float rounded to three decimal points for the converted quantity
     '''
@@ -225,7 +227,9 @@ def convert_units(quantity, unit_from, unit_to):
         conversion = round(conversion, 3)
         return conversion
 
-    if unit_from in VOLUME:
+    if unit_from == unit_to:
+        return quantity
+    elif unit_from in VOLUME:
         if unit_to not in VOLUME:
             # handle unit_from and unit_to incompatibility
             # cannot convert
