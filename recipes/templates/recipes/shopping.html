@@ -5,37 +5,10 @@
 {% endblock %}
 
 {% block main %}
-{% load recipe_extras %}
     <div class='container'>
         <div class='row'>
-            <div class='col'>
-                <h1>Current Shopping List</h1>
-                {% if shopping %}
-                    <ul class="invisible_bullet">
-                        {% for category in shopping %}
-                            <li>
-                                <h6>{{ category|title }}</h6>
-                                <table>
-                                    {% for ingquant in shopping|get_item:category %}
-                                        <tr>
-                                            <td>
-                                                <input type="checkbox" name="ing_checkbox">
-                                            </td>
-                                            <td>
-                                                <label for="ing_checkbox">    
-                                                    {{ ingquant.quantity|floatformat }} {{ ingquant.get_unit_display|lower }} {{ ingquant.ingredient }} 
-                                                </label>
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </table>
-                                <br><br>
-                            </li>
-                        {% endfor %}
-                    </ul>  
-                {% else %}   
-                    Nothing to see here! Go add some recipes or ingredients to your shopping lists!
-                {% endif %}
+            <div id="replaceable-content" class='col'>
+                {% include 'recipes/current_shopping_list.html' %}
             </div>
             <div class='col-sm-3'>
                 <input type='hidden' id='user_id' name='user_id' value='{{ user_id }}'>
@@ -55,24 +28,7 @@
                     </div>
                 </a>
                 {% for shopping_list in shopping_lists %}
-                    <a class='undecorated'  href = "{% url 'recipes:detail_shopping_list' shopping_list.0.id %}">
-                        <div class="card w-100 m-1">
-                            <div class="card-body">
-                                <h5 class="card-title">{{ shopping_list.0.name|title }}</h5>
-                                {% with shopping_list.0.id as list_id %}
-                                    {% include 'recipes/shop_edit_buttons.html' %}
-                                {% endwith %}
-                                <h6 class="card-subtitle mb-2 text-muted">{{ shopping_list.0.description }}</h6>
-                                {% if shopping_list.1 %}
-                                    <ul class="card-text smaller">
-                                    {% for item in shopping_list.1 %}
-                                        <li>{{ item.quantity|floatformat }} {{ item.unit|lower }} {{ item.ingredient }}</li>
-                                    {% endfor %}
-                                    </ul>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </a>
+                    {% include 'recipes/shopping_list_card.html' %}
                 {% endfor %}
             </div>
         </div>

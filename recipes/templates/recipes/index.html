@@ -18,63 +18,42 @@
         {% endif %}
     </h6>
 </div>
-<input type='hidden' id='model' value='{{ model }}'>
-<div>
-    <form action="{% url 'recipes:index' %}">
-        {% csrf_token %}
-        <input class="search_bar" type="text" name="q" id="q" autofocus placeholder="search" autocomplete="off">
-        <input type="submit">
-    </form>
+<div class='container'>
+<form action="{% url 'recipes:index' %}">
+    {% csrf_token %}
+    <input type='hidden' id='model' value='index'>
+    <div class='row'>
+        <div class='col-sm-auto'>
+            <i class="fas fa-search" id="search-icon"></i>
+        </div>
+        <div class='col'>
+            <input class="search_bar p-1 w-100" type="text" name="q" id="user-input" autofocus placeholder="search" autocomplete="off">
+        </div>
+    </div>
+    {% if user.is_authenticated %}
+        {% if recipe_list %}
+            <div class='row'>
+                <div class='col'>
+                </div>
+                <div class='col-sm-auto'>
+                    <input type="radio" id="all" name="group" value="all">
+                    <label for="all">All Recipies</label>
+                    <input type="radio" id="favorites" name="group" value="favorites">
+                    <label for="favorites">Favorites</label>
+                    <input type="radio" id="mine" name="group" value="mine" checked>
+                    <label for="mine">My Recipies</label>
+                    <input type="radio" id="public" name="group" value="public">
+                    <label for="public">Public Recipes</label>
+                </div>
+            </div>
+        {% endif %}
+    {% endif %}
+</form>
 </div>
 
-<div class="container">
-    <div class="row row-col">
-        {% if recipe_list %}
-                {% for recipe in recipe_list %}
-                <div class='col-sm'>
-                    <div class='row-md'>
-                        <div class="card w-100 m-1">
-                            {% if recipe.photo %}
-                                <a href="{% url 'recipes:detail' recipe.id %}">
-                                    <img src="{{ recipe.photo.url }}" class="card-img-top" alt="recipe photo">
-                                </a>
-                            {% endif %}
-                            <div class="card-body">
-                                <div class="row row-col">
-                                    <div class="col-sm-auto">
-                                        <h5>
-                                            <a class="undecorated" href="{% url 'recipes:detail' recipe.id %}">{{ recipe.name|title }}</a>
-                                            {% if recipe.personalized %}
-                                                <i class="fas fa-user-edit"></i>
-                                            {% endif %}
-                                        </h5>
-                                    </div>
-                                    <div class="col">
-                                        {% ifequal 'shopping_list' model %}
-                                            {% with recipe.id as list_id %}
-                                                {% include 'recipes/shop_edit_buttons.html' %}
-                                            {% endwith %}
-                                        {% else %}
-                                            {% include 'recipes/buttons.html' %}
-                                        {% endifequal %}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-        {% else %}
-            <span>Nothing to see here!
-                {% if user.is_authenticated %}
-                    Would you like to <a href="{% url 'recipes:create_recipe' %}">add something new</a>?
-                {% else %}
-                    Would you like to <a href="{% url 'login' %}?next={{request.path}}">log in</a> to see all of your lists and recipes?
-                    Not a user yet? <a href="/register?next={{request.path}}">Register here!</a>
-                {% endif %}
-            </span>
-        {% endif %}
-    </div>
+
+<div id='replaceable-content'>
+    {% include 'recipes/index_cards.html' %}
 </div>
 {% endblock %}
 

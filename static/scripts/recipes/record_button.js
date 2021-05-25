@@ -1,11 +1,27 @@
 // This function based on https://morioh.com/p/560b11927857
 
-function record_button (evt, button_type, button_recipe) {
+function reload_shopping(html_from_view) {
+    
+    const endpoint = '/recipes/shoppinglist/'
+
+    let ing_div = $('#replaceable-content');
+
+    // fade out the ing_div, then:
+    ing_div.fadeTo('fast', 0).promise().then(() => {
+        // replace the HTML contents
+        ing_div.html(html_from_view)
+        // fade-in the div with new contents
+        ing_div.fadeTo('fast', 1)
+
+    })
+}
+
+
+function record_button (evt, button_type, button_recipe, source = undefined) {
     evt.preventDefault(); 
     const recipe_id = button_recipe;
     const endpoint = "/recipes/button_ajax/";
     const model = $('#model').val();
-    console.log('in record button')
     let symbols_dict = {
         favorite: {
             "button_id": "sub_fav",
@@ -34,6 +50,7 @@ function record_button (evt, button_type, button_recipe) {
             'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val(),
             tag: button_type,
             model: model,
+            source: source,
         },
         datatype:'json',
         success: function(data) {
@@ -45,6 +62,10 @@ function record_button (evt, button_type, button_recipe) {
                 else if (data['action'] == 'remove') {
                     icon.innerHTML = action['remove'];
                 }
+                if (data['html_from_view']) {
+                    let html_from_view = data['html_from_view']
+                    reload_shopping(html_from_view)
+                }
             }
         }
     }); 
@@ -53,6 +74,7 @@ function record_button (evt, button_type, button_recipe) {
 $(function(){ // this will be called when the DOM is ready
     let forms = document.getElementsByTagName('form');
     let length = forms.length
+    let source = window.location.pathname
 
     for (i=0; i<length; i++) {
         let form_id = forms.item(i).id;
@@ -70,9 +92,16 @@ $(function(){ // this will be called when the DOM is ready
         }
         
         if (button_type != undefined) {
-            forms.item(i).addEventListener("submit", function(evt){
-                record_button(evt, button_type, button_recipe);    
-            });
+            if (source == '/recipes/shoppinglist/') {
+                forms.item(i).addEventListener("submit", function(evt){
+                    record_button(evt, button_type, button_recipe, source = 'shopping');    
+                });
+            } else {
+                forms.item(i).addEventListener("submit", function(evt){
+                    record_button(evt, button_type, button_recipe);    
+                });
+            }
+            
         }
     };
 });

@@ -126,6 +126,9 @@ for animating blinking search icon */
 .right-align {
     float:right;
 }
+.left-align {
+    float:left;
+}
 
 .title {
     font-weight:bold;

@@ -15,35 +15,57 @@ from .models import VOLUME, WEIGHT, UNIT, UNIT_CHOICES, MEAL_CHOICES, CATEGORY_C
 from .convert_units import convert_units, get_smaller_unit
 from .forms import MealForm, UnitForm, CategoryForm, RecipePhotoForm
 
+# Utility functions
 
 def normalize(data):
     return data.strip().lower()
 
+
+# Page views
+
 def index(request, model_name='recipe'):
+    
     if model_name == "shopping_list":
         model = ShoppingList
     else:
         model = Recipe
 
-    if request.user.is_authenticated:
-
-        user = request.user
-
-        # TODO AJAX search
-        if request.GET.get("q") == None:
-            recipe_list = model.objects.filter(user=user).order_by('-name')
-        else:
-            recipe_list = model.objects.filter(name__icontains=request.GET.get("q"), user=user)
-    else:
+    if not request.user.is_authenticated:
         recipe_list = model.objects.filter(public = True).order_by('-name')
-    
-    ctx = {
-        'recipe_list': recipe_list, 
-        'request': request, 
-        'model': model_name}
+    else:
+        user = request.user
+        # basic list already has 'mine' filter
+        recipe_list = model.objects.filter(user=user).order_by('-name')
+        print(recipe_list)  
+        filter = request.GET.get('radio')
+        filter_status = request.GET.get('status')
+        print('filter status', filter, filter_status)
+        if filter != None and filter_status == 'true':
+            if filter == 'all':
+                recipe_list = model.objects.filter(Q(user = user) | Q(public = True)).order_by('-name')
+            elif filter == 'public':
+                recipe_list = model.objects.filter(public = True).order_by('-name')
+            elif filter == 'favorites':
+                favorites = Favorites.objects.filter(user = user)
+                pks = []
+                for favorite in favorites:
+                    pks.append(favorite.recipe.id)
+                recipe_list = model.objects.filter(pk__in = pks)
+    if request.GET.get("q") != None:
+        recipe_list = recipe_list.filter(name__icontains=request.GET.get("q").lower())
 
-    # if model_name = 'shopping_list':
-        # ctx['shopping_list']
+    ctx = {
+        'request': request, 
+    }
+    
+    if model == ShoppingList:
+        ctx['shopping_lists'] = query_shopping_lists(request)
+    else:
+        ctx['recipe_list'] = recipe_list
+
+    if request.is_ajax():
+        return ajax(request, 'recipes/index_cards.html', ctx)
+
     return render(request, "recipes/index.html", ctx) 
 
 def index_all(request):
@@ -353,10 +375,7 @@ def add_ingredient(request, ingredient_id = None, source = 'recipe'):
     else:
         return HttpResponseRedirect(reverse("recipes:display_edit_recipe", args=(recipe_id,)))
 
-
-@login_required
-def shopping(request):
-    
+def get_shopping_context(request):
     def shopping_helper(ingquant, check_ings, list_ingredients):
         ''' 
         Takes an ingquant, a list of ingquants to compare to, 
@@ -402,7 +421,6 @@ def shopping(request):
                 new_ingquant.save()
                 return list_ingredients
 
-
     list_ingredients = {}
     user = request.user
     for shop in Shop.objects.filter(user = user):
@@ -439,23 +457,33 @@ def shopping(request):
                 for value in additional_values:
                     shopping[category].append(value)
 
+    context = {
+        "shopping": shopping, 
+        'shopping_lists': query_shopping_lists(request),
+        'user_id': request.user.id,
+    }
+    return context
+
+@login_required
+def shopping(request):
+    context = get_shopping_context(request)
+    return render(request, 'recipes/shopping.html', context)
+    
+def query_shopping_lists(request):
     shopping_lists = []
-    lists = ShoppingList.objects.filter(user=request.user)
+    
+    if request.GET.get("q") == None:
+        lists = ShoppingList.objects.filter(user = request.user).order_by('-name')
+    else:
+        lists = ShoppingList.objects.filter(name__icontains=request.GET.get("q"), user = request.user)
+
     for each in lists:
         ingquants = each.get_ingquants()
         ingredients = []
         for ingquant in ingquants:
             ingredients.append(ingquant)
         shopping_lists.append([each, ingredients])
-    
-    context = {
-        "shopping": shopping, 
-        'shopping_lists': shopping_lists,
-        'user_id': request.user.id,
-    }
-
-    return render(request, 'recipes/shopping.html', context)
-    
+    return shopping_lists
 
 @login_required
 def planning(request):
@@ -503,7 +531,17 @@ def button_ajax(request):
             inst.delete()
             data['success'] = True
             data['action'] = "remove"
-        return JsonResponse(data)
+        
+        source = request.POST.get('source')
+        if source == 'shopping':
+            template = loader.get_template('recipes/current_shopping_list.html')
+            context = get_shopping_context(request)
+            html = template.render(context, request)
+            print(html)
+            data["html_from_view"] = html
+            return JsonResponse(data=data, safe=False)
+        else:
+            return JsonResponse(data)
     else: 
         return HttpResponse("Something went wrong recording your button click on " + action)
 
@@ -636,19 +674,22 @@ def display_edit(request, object_id, model_name):
         ctx["ingredients"] = ingredients
 
     if request.is_ajax():
-        ctx['searched'] = True
-        template = loader.get_template('recipes/ingredient_list.html')
-        context = ctx
-        html = template.render(context, request)
-        data_dict = {
-            "html_from_view": html, 
-        }
-        return JsonResponse(data=data_dict, safe=False)
+        return ajax(request, 'recipes/ingredient_list.html', ctx)
 
     if model == Recipe:
         return render(request, 'recipes/edit_recipe.html', context = ctx)
     else:
         return render(request, 'recipes/edit_shopping_list.html', context = ctx)
+
+def ajax(request, template, ctx):
+    ctx['searched'] = True
+    template = loader.get_template(template)
+    context = ctx
+    html = template.render(context, request)
+    data_dict = {
+        "html_from_view": html, 
+    }
+    return JsonResponse(data=data_dict, safe=False)
 
 def record_edit(request, object_id, model):
     recipe = model.objects.get(pk = object_id)

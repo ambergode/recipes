@@ -1,0 +1,22 @@
+<div class="card w-100 m-1">
+    {% if recipe.photo %}
+        <a href="{% url 'recipes:detail' recipe.id %}">
+            <img src="{{ recipe.photo.url }}" class="card-img-top" alt="recipe photo">
+        </a>
+    {% endif %}
+    <div class="card-body">
+        <div class="row row-col">
+            <div class="col-sm-auto">
+                <h5>
+                    <a class="undecorated" href="{% url 'recipes:detail' recipe.id %}">{{ recipe.name|title }}</a>
+                    {% if recipe.personalized %}
+                        <i class="fas fa-user-edit"></i>
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="col">
+                {% include 'recipes/buttons.html' %}
+            </div>
+        </div>
+    </div>
+</div>
