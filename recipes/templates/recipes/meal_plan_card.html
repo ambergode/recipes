@@ -1,0 +1,109 @@
+{% load recipe_extras %}
+{% with day.1 as day_meals %}{% with day.2 as add_meals %}{% with day.0 as day %}
+<div class='card p-1 m-3 g-3 w-100 meal-plan-card' id='meal_plan_card_{{ day|stringformat:"03d" }}'>
+    <div class='card-header'>
+        <div class='row'>
+            <div class='col'>
+                {% if plan.start_date %}
+                    <strong> {{ plan.start_date|plus_days:day|date:'l'}} {{ plan.start_date|plus_days:day|date:'n.d.y'}}</strong>  
+                {% else %}
+                    <strong> Day {{ day|add:'1' }}</strong>  
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class='card-body'>
+        <div class='row g-0'>
+            <div class='col-sm'>
+                {% for meal in planned_meals|get_item:day %}
+                    {% if not display_only %}
+                        <input type='hidden' id='id_{{ day|stringformat:"03d" }}_{{ meal.meal }}' value='{{ meal.id }}'>
+                    {% endif %}
+                    <div class='row g-1 p-2'>
+                        <div class="col txt-align-c">
+                            <strong>{{ meal.meal|title }}</strong> for 
+                            {% if display_only %}
+                                {{ meal.servings }}
+                            {% else %}
+                                <input name='meal_servings_{{ day|stringformat:"03d" }}_{{ meal.meal }}' id='{{ day|stringformat:"03d" }}_{{ meal.meal }}' type='number' value='{{ meal.servings }}' step='1' class='peep-input'>
+                                {% if not meal.notes %}
+                                    <span>
+                                        <i class="fas fa-comment-alt p-2" name='add_notes' id='add_notes_{{ day|stringformat:"03d" }}_{{ meal.meal }}' onclick='add_note("{{ day }}", "{{ meal.meal }}")'></i>
+                                    </span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if not display_only %}
+                        <div class='row'>
+                            <div class='col replaced_content_container'>
+                                <input type='text' name='user-input' class='recipe-search' id='search_{{ day|stringformat:"03d" }}_{{ meal.meal }}' placeholder="search recipes" autocomplete="off" onkeyup='schedule_list_call_helper(this)' onclick='close_lists(); schedule_list_call_helper(this)'>
+                                <div id='replaceable-content_{{ day|stringformat:"03d" }}_{{ meal.meal }}' class='replaced_content'></div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    <div class='row g-1' id='planned_food_{{ day|stringformat:"03d" }}_{{ meal.meal }}'>
+                        {% with meal.recipes.all as recipes %}
+                            {% with meal.meal as meal %}
+                                {% include 'recipes/plan_added_recipes.html' %}
+                            {% endwith %}
+                        {% endwith %}
+                    </div>
+                    {% if meal.notes %}
+                        <div class='row g-1'>
+                            <div class='col'>
+                                Notes: 
+                                {% if display_only %}
+                                    {{ meal.notes }}
+                                {% else %}
+                                    <input type='text' name='notes_{{ day|stringformat:"03d" }}_{{ meal.meal }}' id='notes_{{ day|stringformat:"03d" }}_{{ meal.meal }}' class='form-control' value='{{ meal.notes }}' autocomplete="off">
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div id='replaceable_notes_{{ day|stringformat:"03d" }}_{{ meal.meal }}'>
+                        </div>
+                    {% endif %}
+                    <hr>
+                {% empty %}
+                    <div class='txt-align-c'>
+                        No plans for today!
+                    </div>
+                    <hr>
+                {% endfor %}
+                {% if not display_only %}
+                    <div class='row'>
+                        <div class='col'>
+                            <div class="btn-group dropstart right-align">
+                                <i class="fas fa-plus-circle" id="add_meal" data-bs-toggle="dropdown" aria-expanded="false"></i>
+                                <ul class="dropdown-menu" aria-labelledby="add_meal">
+                                    {% for meal in add_meals %}
+                                        <li class="dropdown-item" onclick='add_rem_meal("{{ day }}", "{{ meal }}", "add")'>{{ meal }}</li>
+                                    {% empty %}
+                                        <li class="px-3" aria-disabled="true">All meals added</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="btn-group dropend left-align">
+                                <i class="fas fa-minus-circle " id="add_meal" data-bs-toggle="dropdown" aria-expanded="false"></i>
+                                <ul class="dropdown-menu" aria-labelledby="add_meal">
+                                    {% if day_meals %} 
+                                        <li><a class="dropdown-item" onclick='add_rem_meal("{{ day }}", "day", "rem")'>day</a></li>
+                                    {% endif %}
+                                    {% for meal in day_meals %}
+                                        <li><a class="dropdown-item" onclick='add_rem_meal("{{ day }}", "{{ meal }}", "rem")'>{{ meal }}</a></li>
+                                    {% empty %}
+                                        <li class="px-3" aria-disabled="true">Nothing added yet!</li>  
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endwith %}{% endwith %}{% endwith %}

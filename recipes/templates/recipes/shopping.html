@@ -5,28 +5,35 @@
 {% endblock %}
 
 {% block main %}
+    <h1 class='txt-align-c'>Shopping</h1>
     <div class='container'>
+        <div class='row'>
+            <div class='col-sm-6'>
+                <input type='hidden' id='user_id' name='user_id' value='{{ user_id }}'>
+                <input type='hidden' id='model' name='model' value='shopping_list'>
+                <a class='undecorated' href="{% url 'recipes:create_recipe' 'shopping' %}">
+                    <div class="card m-1 w-100 ">
+                        <div class="card-body">
+                            <h5 class="card-title txt-align-c">Create a New List</h5>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class='col-sm-6'>
+                <a class='undecorated' href="{% url 'recipes:index_shopping_lists' %}">
+                    <div class="card m-1 w-100 ">
+                        <div class="card-body">
+                            <h5 class="card-title txt-align-c">See All Lists</h5>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
         <div class='row'>
             <div id="replaceable-content" class='col'>
                 {% include 'recipes/current_shopping_list.html' %}
             </div>
-            <div class='col-sm-3'>
-                <input type='hidden' id='user_id' name='user_id' value='{{ user_id }}'>
-                <input type='hidden' id='model' name='model' value='shopping_list'>
-                <a class='undecorated' href="{% url 'recipes:create_recipe' %}">
-                    <div class="card w-100 m-1">
-                        <div class="card-body">
-                            <h5 class="card-title">Create a New List</h5>
-                        </div>
-                    </div>
-                </a>
-                <a class='undecorated' href="{% url 'recipes:index_shopping_lists' %}">
-                    <div class="card w-100 m-1">
-                        <div class="card-body">
-                            <h5 class="card-title">See All Lists</h5>
-                        </div>
-                    </div>
-                </a>
+            <div class='col-md-3'>
                 {% for shopping_list in shopping_lists %}
                     {% include 'recipes/shopping_list_card.html' %}
                 {% endfor %}

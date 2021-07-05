@@ -18,6 +18,18 @@ MEAL_CHOICES = (
     ("DESSERT", "dessert"),
 )
 
+
+MEALTIME_CHOICES = (
+    ('BREAKFAST', 'breakfast'),
+    ('BRUNCH', 'brunch'),
+    ('LUNCH', 'lunch'),
+    ('DINNER', 'dinner'),
+    ('SNACK', 'snack'),
+    ('DESSERT', 'dessert'),
+    ('OTHER', 'other'),
+)
+
+
 UNIT_CHOICES = (
     ("GRAM", "gram"),
     ("CUP", "cup"),
@@ -36,6 +48,7 @@ UNIT_CHOICES = (
     ("UNIT", ""),
     ("UNDETERMINED", "?"),
 )
+
 
 CATEGORY_CHOICES = (
     ("ALCOHOLIC_BEVERAGES", 'alcoholic beverages'),
@@ -66,6 +79,7 @@ CATEGORY_CHOICES = (
     ("AMERICAN_INDIAN_ALASKAN_NATIVE_FOODS", 'american indian/alaska native foods'),
     ("OTHER", 'other'),
 )
+
 
 UNIT_DICT = {
     "gram" : "GRAM",
@@ -116,6 +130,7 @@ CATEGORY_DICT = {
     "AMERICAN_INDIAN_ALASKAN_NATIVE_FOODS": 'american indian/alaska native foods',
     "OTHER": 'other',
 }
+
 
 class CommonInfo(models.Model):
     name = models.CharField(max_length = 256)
@@ -175,6 +190,7 @@ class Recipe(CommonInfo):
     
     def get_ingquants(self):
         return IngQuant.objects.filter(recipe = self.id)
+
 
     def get_steps(self):
         return Step.objects.filter(recipe = self.id).order_by('order')
@@ -253,10 +269,10 @@ class Ingredient(models.Model):
         return self.ingredient
 
 class IngQuant(models.Model):
-    ingredient = models.ForeignKey(Ingredient, on_delete = models.CASCADE)
+    ingredient = models.ForeignKey(Ingredient, on_delete = models.CASCADE, related_name = 'ingredients')
     quantity = models.DecimalField(max_digits = 7, decimal_places = 2, default = 0)
-    recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE, null = True, blank = True)
-    shopping_list = models.ForeignKey(ShoppingList, on_delete = models.CASCADE, null = True, blank = True)
+    recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE, null = True, blank = True, related_name = 'ingquants')
+    shopping_list = models.ForeignKey(ShoppingList, on_delete = models.CASCADE, null = True, blank = True, related_name = 'ingquants')
 
     unit = models.CharField(
         max_length = 13,
@@ -275,7 +291,7 @@ class IngQuant(models.Model):
 
 class Favorites(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE)
-    user = models.ForeignKey(User, on_delete = models.CASCADE)
+    user = models.ForeignKey(User, on_delete = models.CASCADE, related_name = 'favorites')
 
     def __str__(self):
         return str(self.recipe)
@@ -295,4 +311,44 @@ class Plan(models.Model):
 
     def __str__(self):
         return str(self.recipe)
-    
+
+class MealPlan(models.Model):
+    name = models.CharField(max_length = 256)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    notes = models.CharField(max_length = 1024, null = True, blank = True)
+    start_date = models.DateField(auto_now=False, auto_now_add=False, null=True, blank=True)
+    end_date = models.DateField(auto_now=False, auto_now_add=False, null=True, blank=True)
+    days = models.IntegerField(default = '7')
+    people = models.IntegerField(default = '2')
+
+    def __meal_field():
+        return models.BooleanField(default = False)
+
+    breakfast = __meal_field()
+    brunch = __meal_field()
+    lunch = __meal_field()
+    dinner = __meal_field()
+    snack = __meal_field()
+    dessert = __meal_field()
+    other = __meal_field()
+
+    def __str__(self):
+        return self.name 
+
+class PlannedMeal(models.Model):
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    meal_plan = models.ForeignKey(MealPlan, on_delete = models.CASCADE, related_name = 'planned_meals')
+    meal = models.CharField(
+        max_length = 10,
+        choices = MEALTIME_CHOICES,
+        default = "DINNER"
+    )
+    servings = models.IntegerField(default = '2')
+    day = models.IntegerField()
+    recipes = models.ManyToManyField(Recipe, blank = True)
+    ingredients = models.ManyToManyField(Ingredient, blank = True)
+    notes = models.CharField(max_length = 226, null = True, blank = True)
+
+    def __str__(self):
+        return 'day ' + str(self.day) + ' ' + self.meal + ' for ' + str(self.meal_plan)
+

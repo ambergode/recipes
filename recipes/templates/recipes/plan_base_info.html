@@ -1,0 +1,117 @@
+{% load recipe_extras %}
+<div class='container'>
+    <div class='row'>
+        <div class='col-sm-auto m-1'>
+            Name: 
+        </div>
+        <div class='col m-1'>
+            {% if display_only %}
+                <h6>{{ plan.name }}</h6>
+            {% else %}
+                {% if plan.name %}
+                    <input type='name' name='name' value='{{ plan.name }}' class='w-100' autocomplete="off">
+                {% elif plan_number %}
+                    <input type='name' name='name' value='Meal Plan {{ plan_number }}' class='w-100' autocomplete="off">
+                {% else %}
+                    <input type='name' name='name' placeholder='name' class='w-100' autocomplete="off">
+                {% endif %}
+            {% endif %}
+        </div>
+        <div class='col-sm-auto m-1'>
+            People: 
+            {% if display_only %}
+                {{ plan.people }}
+            {% else %}
+                {% if plan %}
+                    <input name='people' id='people' type='number' data-original='{{ plan.people }}' value='{{ plan.people }}' step='1' class='num-input'>
+                {% else %}
+                    <input name='people' id='people' type='number' data-original='2' value='2' step='1' class='num-input'>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-sm-auto m-1'>
+            Dates: 
+        </div>
+        <div class='col m-1'>
+            {% if display_only %}
+                {{ plan.start_date }} - {{ plan.end_date }}
+            {% else %}
+                {% if plan %}
+                    <input type='date' name='startdate' value='{{ plan.start_date|date:"c"}}' id='startdate' class='date-input'> 
+                    - 
+                    <input type='date' name='enddate' value='{{ plan.end_date|date:"c" }}' id='enddate' class='date-input'>
+                {% else %}
+                    <input type='date' name='startdate' id='startdate' value='{{ today }}' class='date-input'> 
+                    - 
+                    <input type='date' name='enddate' value='{{ today }}' id='enddate' class='date-input'>
+                {% endif %}
+            {% endif %}
+        </div>
+        <div class='col-sm-auto m-1'>
+            Days: 
+            {% if display_only %}
+                {{ plan.days }}
+            {% else %}
+                {% if plan %}
+                    <input type='number' class='num-input' value='{{ plan.days }}' name='days' id='days' step='1' min='0'>
+                {% else %}
+                    <input type='number' class='num-input' value='7' name='days' id='days' step='1' min='0'>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-sm-auto m-1'>
+            Meals to plan for: 
+        </div>
+        <div class='col m-1'>
+            {% if display_only %}
+                <ul>
+                    {% for meal in meals %}
+                        <li>{{ meal }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                {% for meal_time_choice in meal_time_choices %}
+                    <span class='p-1'>
+                        {% if plan %} 
+                            {% if meal_time_choice.1 in meals %}
+                                <input type='checkbox' class='meal_time_choices' checked name='{{ meal_time_choice.1 }}' value='{{ meal_time_choice.1 }}'> <label for='{{ meal_time_choice.1 }}'>{{ meal_time_choice.1|title }}</label>
+                            {% else %}
+                                <input type='checkbox' class='meal_time_choices' name='{{ meal_time_choice.1 }}' value='{{ meal_time_choice.1 }}'> <label for='{{ meal_time_choice.1 }}'>{{ meal_time_choice.1|title }}</label>
+                            {% endif %}
+                        {% else %}
+                            {% if meal_time_choice.1 in 'breakfast,lunch,dinner' %}
+                                <input type='checkbox' class='meal_time_choices' checked name='{{ meal_time_choice.1 }}' value='{{ meal_time_choice.1 }}'> <label for='{{ meal_time_choice.1 }}'>{{ meal_time_choice.1|title }}</label>
+                            {% else %}
+                                <input type='checkbox' class='meal_time_choices' name='{{ meal_time_choice.1 }}' value='{{ meal_time_choice.1 }}'> <label for='{{ meal_time_choice.1 }}'>{{ meal_time_choice.1|title }}</label>
+                            {% endif %}
+                        {% endif %}
+                    </span>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-sm-auto m-1'>
+            Notes:
+        </div>
+        <div class='col m-1'>
+            {% if display_only %}
+                {% if plan.notes %}
+                    {{ plan.notes }}
+                {% else %}
+                    No notes
+                {% endif %}
+            {% else %}
+                {% if plan.notes %}
+                    <input name='notes' type='text' value='{{ plan.notes }}' autocomplete="off" class='w-100'>
+                {% else %}
+                    <input name='notes' type='text' placeholder='Additional notes' autocomplete="off" class='w-100'>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>

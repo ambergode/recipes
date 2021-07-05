@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block title %} 
+    Meal Plans
+{% endblock %}
+
+{% block main %}
+    <h1>Meal Plans</h1>
+    <div class='container'>
+        <div class='row row-cols-1 row-cols-sm-2 row-cols-md-4 row-cols-lg-4'>
+            {% for plan in plans %}
+                <div class='col'>
+                    {% include 'recipes/plan_card.html' %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+{% endblock %}

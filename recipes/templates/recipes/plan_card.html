@@ -1,0 +1,21 @@
+<a class="undecorated" href="{% url 'recipes:plan_detail' plan.id %}">
+    <div class="card w-100 m-1">
+        <div class="card-body">
+            <div class="row">
+                <div class="col">
+                    <h5>
+                        {{ plan.name|title }}
+                    </h5>
+                    {{ plan.start_date }} - {{ plan.end_date }}
+                </div>
+            </div>
+            <div class='row'>
+                <div class="col">
+                    <form action='{% url "recipes:display_edit_plan" plan.id %}' method='post'>
+                        <input type='submit' value='Edit' class='btn btn-secondary'>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</a>

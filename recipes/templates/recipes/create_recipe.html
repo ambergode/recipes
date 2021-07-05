@@ -7,13 +7,13 @@
 {% block main %}
 
     <div class='d-flex justify-content-center'>
-        <form action = "{% url 'recipes:create_recipe' %}" method="post">
+        <form action = "{% url 'recipes:create_recipe' model %}" method="post">
             {% csrf_token %}
             <div>
                 What would you like to create?
-                <input type="radio" id="model_recipe" name="model" value="recipe" checked>
+                <input type="radio" id="model_recipe" name="model" value="recipe" {% ifequal model 'recipe' %}checked{% endifequal %}>
                 <label for="model_recipe">Recipe</label>
-                <input type="radio" id="model_shopping_list" name="model" value="shopping_list">
+                <input type="radio" id="model_shopping_list" name="model" value="shopping_list" {% ifequal model 'shopping' %}checked{% endifequal %}>
                 <label for="recipe">Shopping List</label>
             </div>
             <br>

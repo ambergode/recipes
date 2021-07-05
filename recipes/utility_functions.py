@@ -91,4 +91,5 @@ def flip_dict(dictionary):
     print("}")
     return new_dict
 
-flip_dict(CATEGORY_DICT)
+# flip_dict(CATEGORY_DICT)
+

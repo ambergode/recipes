@@ -25,20 +25,22 @@
         
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
         
+        <!-- Load cookie.js to deal with csrf tokens -->
+        <script src="https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js"></script>
 
         <!-- Font Awesome CDN-->
         <script src="https://kit.fontawesome.com/4549b03041.js" crossorigin="anonymous"></script>
 
+        <!-- Sweet Alert CDN-->
+        <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+        
         <!-- Masonry CDN -->
         <script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js"></script>
 
         <title>Tempt Me: {% block title %}{% endblock %}</title>
         {% block head %}{% endblock %}
 
-        <script src= {% static 'scripts/recipes/ajax.js' %}></script>
-        <script src= {% static 'scripts/recipes/record_button.js' %}></script>
-        <script src= {% static 'scripts/recipes/add_rows.js' %}></script>  
-        <script src= {% static 'scripts/recipes/update_ingredients.js' %}></script>   
+        <script src= {% static 'scripts/recipes/js_functions.js' %}></script>  
 
     </head>
 
@@ -51,12 +53,11 @@
             <!-- Add back in if statement once session information set up -->
             <div class="collapse navbar-collapse" id="navbar">
                 <ul class="navbar-nav mr-auto mt-2 d-inline-flex flex-row">
-                    <li class="nav-item"><a class="nav-link" href="{% url 'recipes:index' %}">My Recipes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'recipes:index' %}">Recipes</a></li>
                     {% if user.is_authenticated %}
-                        <li class="nav-item"><a class="nav-link" href="{% url 'recipes:index_all' %}">All Recipes</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'recipes:shopping' %}">Shopping</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'recipes:planning' %}">Planning</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{% url 'recipes:create_recipe' %}">Add</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'recipes:create_recipe' 'recipe' %}">Add</a></li>
                     {% endif %}
                 </ul>
                 <ul class="navbar-nav ml-auto mt-2">
@@ -70,17 +71,12 @@
             </div>
         </nav>
 
-        <main class="container">
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert {% if message.tags %} {{ message.tags }} {% else %} alert-warning {% endif %} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-
-            {% block main %}{% endblock %}
+        <main>
+            {% include 'recipes/messages.html' %}
+            
+            <div class="container">
+                {% block main %}{% endblock %}
+            </div>
         </main>
 
         <footer class="small text-center text-muted">

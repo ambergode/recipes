@@ -1,0 +1,5 @@
+{% for recipe in recipes %}
+    <div class='recipe_option' id='{{ recipe.id }}'>{{ recipe }}</div>
+{% empty %}
+    <div class='recipe_option' id='no_recipe'>Nothing here! Try a different search.</div>
+{% endfor %}

@@ -1,6 +1,8 @@
 from django import template
 
-from ..models import Recipe, Favorites, Plan, Shop, ShoppingList
+import datetime
+
+from ..models import Recipe, Favorites, Plan, Shop, ShoppingList, MealPlan, PlannedMeal
 
 register = template.Library()
 
@@ -36,4 +38,20 @@ def get_status(tag, model, recipe_id, request):
 
 @register.filter
 def get_item(dictionary, key):
+    try:
+        key = int(key)
+    except:
+        pass
+
     return dictionary.get(key)
+
+@register.filter
+def plus_days(value, days):
+    return value + datetime.timedelta(days=int(days))
+
+@register.filter
+def get_related(planned_meal, attribute):
+    if attribute == 'recipes':
+        return planned_meal.recipes.all()
+    elif attribute == 'ingredients':
+        return planned_meal.ingredients.all()

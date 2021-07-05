@@ -27,23 +27,23 @@
             <i class="fas fa-search" id="search-icon"></i>
         </div>
         <div class='col'>
-            <input class="search_bar p-1 w-100" type="text" name="q" id="user-input" autofocus placeholder="search" autocomplete="off">
+            <input class="search_bar p-1 w-100" type="text" name="q" id="user-input" autofocus placeholder="search by name" autocomplete="off">
         </div>
     </div>
     {% if user.is_authenticated %}
         {% if recipe_list %}
-            <div class='row'>
+            <div class='row smaller'>
                 <div class='col'>
                 </div>
                 <div class='col-sm-auto'>
                     <input type="radio" id="all" name="group" value="all">
-                    <label for="all">All Recipies</label>
+                    <label for="all">All</label>
                     <input type="radio" id="favorites" name="group" value="favorites">
                     <label for="favorites">Favorites</label>
                     <input type="radio" id="mine" name="group" value="mine" checked>
                     <label for="mine">My Recipies</label>
                     <input type="radio" id="public" name="group" value="public">
-                    <label for="public">Public Recipes</label>
+                    <label for="public">Public</label>
                 </div>
             </div>
         {% endif %}

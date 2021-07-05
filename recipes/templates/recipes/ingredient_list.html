@@ -3,12 +3,12 @@
         {% if ingredients %}
             <div class='row'>
                 <div class='col'>
-                    <select name="ingredient_name">
+                    <select name="ingredient_name" id='ingredient_name'>
                         {% for ingredient in ingredients %}
-                        <option value="{{ ingredient }}">{{ ingredient }}</li>
+                        <option value="{{ ingredient.id }}">{{ ingredient }}</li>
                         {% endfor %}
                     </select>
-                    <input type="submit" value="Add Ingredient" name="add_to_recipe">  
+                    <input type="submit" value="Add Ingredient" name="add_to_recipe" id='add_to_recipe' class='my-2 mx-1'>  
                 </div>
             </div>
         {% else %}

@@ -1,3 +1,4 @@
+{% include 'recipes/messages.html' %}
 {% for component in components %}
     <div class='row p-0.5 g-0 indented'>
         <div class='col-sm-auto'>
@@ -12,16 +13,16 @@
         <div class='col-sm-auto'>
             <button type="button" name='rem_{{ component.0.id }}' id='rem_{{ component.0.id }}' class="btn btn-link"><i class="fas fa-trash"></i></button>
             <!-- Button trigger modal -->
-            <button type="button" name='edt_{{ component.0.id }}' id='edt_{{ component.0.id }}' class="btn btn-link" data-bs-toggle="modal" data-bs-target="#modal_{{ component.0.id }}"><i class="fas fa-edit"></i></button>  
+            <button type="button" class="btn btn-link" data-bs-toggle="modal" data-bs-target="#modal_{{ component.0.id }}"><i class="fas fa-edit"></i></button>  
         </div>
         <hr>
         
         <!-- Modal -->
-        <div class="modal fade" id="modal_{{ component.0.id }}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal fade" id="modal_{{ component.0.id }}" tabindex="-1" aria-labelledby="{{ component.0.id }}_ModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Edit Ingredient</h5>
+                <h5 class="modal-title" id="{{ component.0.id }}_ModalLabel">Edit Ingredient</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -30,9 +31,9 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 {% ifequal component.0.ingredient.user user %}
-                    <button type='submit' name='delete_ingredient' value='delete_ingredient_{{ component.0.ingredient.id }}' class='btn btn-danger'>Delete Permanently</button>
+                    <button name='delete_ingredient' id='delete_ingredient_{{ component.0.ingredient.id }}' value='modal_{{ component.0.id }}' class='btn btn-danger'>Delete Permanently</button>
                 {% endifequal %}
-                <button type="submit" class="btn btn-primary" name='save_ingredient' value='save_ingredient_{{ component.0.ingredient.id }}'>Save changes</button>
+                <button class="btn btn-primary" name='edt_{{ component.0.id }}' id='edt_{{ component.0.id }}' value='save_ingredient_{{ component.0.ingredient.id }}'>Save changes</button>
             </div>
             </div>
         </div>

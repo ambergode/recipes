@@ -1,0 +1,23 @@
+{% for recipe in recipes %}
+    <div class='row added_recipe'>
+        <div class='col'>
+            <a href='{% url "recipes:detail" recipe.id %}' class='undecorated'>
+                <div class='' id='{{ day|stringformat:"03d" }}_{{ recipe.id|stringformat:"04d" }}_{{ meal }}'>{{ recipe }}</div>
+            </a>
+        </div>
+        {% if not display_only %}
+            <div class='col-sm-auto'>
+                <i class="fas fa-times delete" id='delete_{{ day|stringformat:"03d" }}_{{ recipe.id|stringformat:"04d" }}_{{ meal }}' onclick="remove_food('{{day}}', '{{meal}}', '{{recipe.id}}')"></i>
+            </div>
+        {% endif %}
+    </div>
+{% empty %}
+    <div class='added_recipe' id='no_recipe' style='background-color:#ffe8e8;'>
+        {% if display_only %}
+            Going hungry!
+            <a href='{% url "recipes:display_edit_plan" plan.id %}' class='undecorated'>Add something!</a>
+        {% else %}
+            Nothing yet! Add something.
+        {% endif %}
+    </div>
+{% endfor %}

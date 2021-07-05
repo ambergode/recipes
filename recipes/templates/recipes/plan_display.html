@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+
+{% block title %} 
+    {{ plan.name }}
+{% endblock %}
+
+{% block main %}
+    {% include 'recipes/full_plan_card.html' %}
+{% endblock %}

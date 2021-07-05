@@ -16,10 +16,10 @@
                 </form>
             </div>
             <div class='col g-1'>
-                <form action="{% url 'recipes:delete_list' recipe_id %}" method='post'>
+                <form id='delete_recipe_form' action="{% url 'recipes:delete_list' recipe_id %}" method='post'>
                     {% csrf_token %}
                     <input type='hidden' name='delete_model' id='model' value='shopping_list'>
-                    <input type='submit' name='delete_list' id="delete_list" value='Delete List' class='btn-sm btn-danger'>
+                    <input type='submit' name='delete_list' id="delete_recipe" value='Delete List' class='btn-sm btn-danger'>
                 </form>
             </div>
             <div class='col g-1'>
@@ -37,7 +37,6 @@
             <input type="submit" id="edit_list" value="Update List" class='btn-sm btn-dark btn-block w-100'>  
         </div>
         <input type='hidden' name='recipe_id' id='recipe_id' value='{{ recipe.id }}'>
-        <input type='hidden' name='model' id='model' value='shopping_list'>
         <h3>
             {% if recipe.name %}
                 <input type='text' name='name' value='{{ recipe.name|title }}' autocomplete='off'>

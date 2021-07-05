@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %} 
+    Meal Planning
+{% endblock %}
+
+{% block main %}
+<h1 class='txt-align-c'>Meal Planning</h1>
+<div class='container'>
+    <div class='row'>
+        <div class='col g-0 m-0 p-1'>
+            <input type='hidden' id='model' name='model' value='plan'>
+            <a class='undecorated' href="{% url 'recipes:create_plan' %}">
+                <div class="card w-100">
+                    <div class="card-body">
+                        <h5 class="card-title txt-align-c">Create a New Meal Plan</h5>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class='col g-0 m-0 p-1'>
+            <a class='undecorated' href="{% url 'recipes:index_plans' %}">
+                <div class="card w-100">
+                    <div class="card-body">
+                        <h5 class="card-title txt-align-c">See All Plans</h5>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col outlined p-5 m-1'>
+            {% with current_plan as plan %}
+                {% include 'recipes/full_plan_card.html' %}
+            {% endwith %}
+        </div>
+        <div class='col-sm-3'>
+            {% for plan in page_obj %}
+                <div class='col'>
+                    {% include 'recipes/plan_card.html' %}
+                </div>
+            {% endfor %}
+
+            {% if page_obj.has_previous or page_obj.has_next %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1">&laquo;</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">&lt;</a>
+                        </li>
+                        {% endif %}
+                        <li class="page-item active">
+                            <span class="page-link">
+                                {{ page_obj.number }}
+                                <span class="sr-only">(current)</span>
+                            </span>  
+                        </li>
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">&gt;</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">&raquo;</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}

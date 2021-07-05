@@ -1,5 +1,5 @@
 {% with component.0.ingredient.id as ing_id %}
-    <div name="add_ingredient" class='card inner-div'>
+    <div name="add_ingredient" class='card inner-div w-100'>
         <div class='card-body'>
             {% if component.0.ingredient.ingredient %} 
                 <p>Not what you think it should be? Change it!</p>
@@ -17,7 +17,7 @@
                         </td>
                         <td>
                             {% if ing_id %}
-                                <select name='category_{{ ing_id }}'>
+                                <select name='category_{{ ing_id }}' id='category_{{ component.0.id }}'>
                             {% else %}
                                 <select name='category_new'>
                             {% endif %}
@@ -38,8 +38,8 @@
                         <td>
                             {% if ing_id %}
                                 {% if component.0.ingredient.typical_serving_size %}
-                                    <input type="number" name="serving_size_{{ ing_id }}" value='{{ component.0.ingredient.typical_serving_size|floatformat:"2" }}' step='.01' class='num-input inline'>
-                                    <select name='unit_{{ ing_id }}' class='inline'>
+                                    <input type="number" name="serving_size_{{ ing_id }}" id='serving_size_{{ component.0.id }}' value='{{ component.0.ingredient.typical_serving_size|floatformat:"2" }}' step='.01' class='num-input inline'>
+                                    <select name='unit_{{ ing_id }}' id='serving_unit_{{ component.0.id }}' class='inline'>
                                     {% for option in unit_choices %}
                                         {% ifequal component.0.ingredient.typical_serving_unit option.0 %}
                                             <option value='{{ option.0 }}' selected>{{ option.1 }}</option>
@@ -49,8 +49,8 @@
                                     {% endfor %}
                                     </select>
                                 {% else %}
-                                    <input type="number" name="serving_size_{{ ing_id }}" value='1' step='.01' class='num-input inline'>
-                                    <select name='unit_{{ ing_id }}' class='inline'>
+                                    <input type="number" name="serving_size_{{ ing_id }}" id='serving_size_{{ component.0.id }}' value='1' step='.01' class='num-input inline'>
+                                    <select name='unit_{{ ing_id }}' id='serving_unit_{{ component.0.id }}' class='inline'>
                                     {% for option in unit_choices %}
                                         {% ifequal 'GRAM' option.0 %}
                                             <option value='{{ option.0 }}' selected>{{ option.1 }}</option>
@@ -81,9 +81,9 @@
                         <td>
                         {% if ing_id %}
                             {% if component.0.ingredient.weight_per_serving %}
-                                <input type="number" name="weight_per_serving_{{ ing_id }}" value="{{ component.0.ingredient.weight_per_serving|floatformat:'0' }}" step='.01' class='num-input'> g/serving
+                                <input type="number" name="weight_per_serving_{{ ing_id }}" id='weight_{{ component.0.id }}' value="{{ component.0.ingredient.weight_per_serving|floatformat:'0' }}" step='.01' class='num-input'> g/serving
                             {% else %}
-                                <input type="number" name="weight_per_serving_{{ ing_id }}" value="0" step='.01' class='num-input'> g/serving
+                                <input type="number" name="weight_per_serving_{{ ing_id }}" id='weight_{{ component.0.id }}' value="0" step='.01' class='num-input'> g/serving
                             {% endif %}
                         {% else %}
                             <input type="number" name="weight_per_serving_new" value="0" step='.01' class='num-input'> g/serving
@@ -101,9 +101,9 @@
                         </td>
                         <td>
                             {% if component.0.ingredient.calories %}
-                                <input type="number" name="calories_{{ ing_id }}" value="{{ component.0.ingredient.calories|floatformat:'0' }}" step='.01' class='num-input'>
+                                <input type="number" name="calories_{{ ing_id }}" id='calories_{{ component.0.id }}' value="{{ component.0.ingredient.calories|floatformat:'0' }}" step='.01' class='num-input'>
                             {% elif component.0.ingredient %}
-                                <input type="number" name="calories_{{ ing_id }}" value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
+                                <input type="number" name="calories_{{ ing_id }}" id='calories_{{ component.0.id }}' value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% else %}
                                 <input type="number" name="calories_new" value="0" step='.01' class='num-input'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                             {% endif %}
@@ -115,9 +115,9 @@
                         </td>
                         <td>
                             {% if component.0.ingredient.fat %}
-                                <input type="number" name="fat_{{ ing_id }}" value="{{ component.0.ingredient.fat|floatformat:'0' }}" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
+                                <input type="number" name="fat_{{ ing_id }}" id='fat_{{ component.0.id }}' value="{{ component.0.ingredient.fat|floatformat:'0' }}" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% elif component.0.ingredient %}
-                                <input type="number" name="fat_{{ ing_id }}" value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
+                                <input type="number" name="fat_{{ ing_id }}" id='fat_{{ component.0.id }}' value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% else %}
                                 <input type="number" name="fat_new" value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% endif %}
@@ -129,9 +129,9 @@
                         </td>
                         <td>
                             {% if component.0.ingredient.transfats %}
-                                <input type="number" name="transfats_{{ ing_id }}" value="{{ component.0.ingredient.transfats|floatformat:'0' }}" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
+                                <input type="number" name="transfats_{{ ing_id }}" id='transfat_{{ component.0.id }}' value="{{ component.0.ingredient.transfats|floatformat:'0' }}" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% elif component.0.ingredient %}
-                                <input type="number" name="transfats_{{ ing_id }}" value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
+                                <input type="number" name="transfats_{{ ing_id }}" id='transfat_{{ component.0.id }}' value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% else %}
                                 <input type="number" name="transfats_new" value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% endif %}
@@ -143,9 +143,9 @@
                         </td>
                         <td>
                             {% if component.0.ingredient.satfats %}
-                                <input type="number" name="satfats_{{ ing_id }}" value="{{ component.0.ingredient.satfats|floatformat:'0' }}" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
+                                <input type="number" name="satfats_{{ ing_id }}" id='satfat_{{ component.0.id }}' value="{{ component.0.ingredient.satfats|floatformat:'0' }}" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% elif component.0.ingredient %}
-                                <input type="number" name="satfats_{{ ing_id }}" value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
+                                <input type="number" name="satfats_{{ ing_id }}" id='satfat_{{ component.0.id }}' value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% else %}
                                 <input type="number" name="satfats_new" value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% endif %}
@@ -157,9 +157,9 @@
                         </td>
                         <td>
                             {% if component.0.ingredient.monounsatfats %}
-                                <input type="number" name="monounsatfats_{{ ing_id }}" value="{{ component.0.ingredient.monounsatfats|floatformat:'0' }}" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
+                                <input type="number" name="monounsatfats_{{ ing_id }}" id='monounsatfat_{{ component.0.id }}' value="{{ component.0.ingredient.monounsatfats|floatformat:'0' }}" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% elif component.0.ingredient %}
-                                <input type="number" name="monounsatfats_{{ ing_id }}" value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
+                                <input type="number" name="monounsatfats_{{ ing_id }}" id='monounsatfat_{{ component.0.id }}' value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% else %}
                                 <input type="number" name="monounsatfats_new" value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% endif %}
@@ -171,9 +171,9 @@
                         </td>
                         <td>
                             {% if component.0.ingredient.polyunsatfats %}
-                                <input type="number" name="polyunsatfats_{{ ing_id }}" value="{{ component.0.ingredient.polyunsatfats|floatformat:'0' }}" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
+                                <input type="number" name="polyunsatfats_{{ ing_id }}" id='polyunsatfat_{{ component.0.id }}' value="{{ component.0.ingredient.polyunsatfats|floatformat:'0' }}" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% elif component.0.ingredient %}
-                                <input type="number" name="polyunsatfats_{{ ing_id }}" value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
+                                <input type="number" name="polyunsatfats_{{ ing_id }}" id='polyunsatfat_{{ component.0.id }}' value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% else %}
                                 <input type="number" name="polyunsatfats_new" value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% endif %}
@@ -185,9 +185,9 @@
                         </td>
                         <td>
                             {% if component.0.ingredient.cholesterol %}
-                                <input type="number" name="cholesterol_{{ ing_id }}" value="{{ component.0.ingredient.cholesterol|floatformat:'0' }}" step='.01' class='num-input'> mg
+                                <input type="number" name="cholesterol_{{ ing_id }}" id='cholesterol_{{ component.0.id }}' value="{{ component.0.ingredient.cholesterol|floatformat:'0' }}" step='.01' class='num-input'> mg
                             {% elif component.0.ingredient %}
-                                <input type="number" name="cholesterol_{{ ing_id }}" value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
+                                <input type="number" name="cholesterol_{{ ing_id }}" id='cholesterol_{{ component.0.id }}' value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% else %}
                                 <input type="number" name="cholesterol_new" value="0" step='.01' class='num-input'> mg
                             {% endif %}
@@ -199,9 +199,9 @@
                         </td>
                         <td>
                             {% if component.0.ingredient.sodium %}
-                                <input type="number" name="sodium_{{ ing_id }}" value="{{ component.0.ingredient.sodium|floatformat:'0' }}" step='.01' class='num-input'> mg
+                                <input type="number" name="sodium_{{ ing_id }}" id='sodium_{{ component.0.id }}' value="{{ component.0.ingredient.sodium|floatformat:'0' }}" step='.01' class='num-input'> mg
                             {% elif component.0.ingredient %}
-                                <input type="number" name="sodium_{{ ing_id }}" value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
+                                <input type="number" name="sodium_{{ ing_id }}" id='sodium_{{ component.0.id }}' value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% else %}
                                 <input type="number" name="sodium_new" value="0" step='.01' class='num-input'> mg
                             {% endif %}
@@ -213,9 +213,9 @@
                         </td>
                         <td>
                             {% if component.0.ingredient.carbs %}
-                                <input type="number" name="carbs_{{ ing_id }}" value="{{ component.0.ingredient.carbs|floatformat:'0' }}" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
+                                <input type="number" name="carbs_{{ ing_id }}" id='carbs_{{ component.0.id }}' value="{{ component.0.ingredient.carbs|floatformat:'0' }}" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% elif component.0.ingredient %}
-                                <input type="number" name="carbs_{{ ing_id }}" value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
+                                <input type="number" name="carbs_{{ ing_id }}" id='carbs_{{ component.0.id }}' value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% else %}
                                 <input type="number" name="carbs_new" value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% endif %}
@@ -227,9 +227,9 @@
                         </td>
                         <td>
                             {% if component.0.ingredient.fiber %}
-                                <input type="number" name="fiber_{{ ing_id }}" value="{{ component.0.ingredient.fiber|floatformat:'0' }}" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
+                                <input type="number" name="fiber_{{ ing_id }}" id='fiber_{{ component.0.id }}' value="{{ component.0.ingredient.fiber|floatformat:'0' }}" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% elif component.0.ingredient %}
-                                <input type="number" name="fiber_{{ ing_id }}" value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
+                                <input type="number" name="fiber_{{ ing_id }}" id='fiber_{{ component.0.id }}' value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% else %}
                                 <input type="number" name="fiber_new" value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% endif %}
@@ -241,9 +241,9 @@
                         </td>
                         <td>
                             {% if component.0.ingredient.sugar %}
-                                <input type="number" name="sugar_{{ ing_id }}" value="{{ component.0.ingredient.sugar|floatformat:'0' }}" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
+                                <input type="number" name="sugar_{{ ing_id }}" id='sugar_{{ component.0.id }}' value="{{ component.0.ingredient.sugar|floatformat:'0' }}" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% elif component.0.ingredient %}
-                                <input type="number" name="sugar_{{ ing_id }}" value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
+                                <input type="number" name="sugar_{{ ing_id }}" id='sugar_{{ component.0.id }}' value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% else %}
                                 <input type="number" name="sugar_new" value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% endif %}
@@ -255,9 +255,9 @@
                         </td>
                         <td>
                             {% if component.0.ingredient.protein %}
-                                <input type="number" name="protein_{{ ing_id }}" value="{{ component.0.ingredient.protein|floatformat:'0' }}" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
+                                <input type="number" name="protein_{{ ing_id }}" id='protein_{{ component.0.id }}' value="{{ component.0.ingredient.protein|floatformat:'0' }}" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% elif component.0.ingredient %}
-                                <input type="number" name="protein_{{ ing_id }}" value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
+                                <input type="number" name="protein_{{ ing_id }}" id='protein_{{ component.0.id }}' value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% else %}
                                 <input type="number" name="protein_new" value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
                             {% endif %}

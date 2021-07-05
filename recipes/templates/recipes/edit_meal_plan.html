@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %} 
+    Meal Planning
+{% endblock %}
+
+{% block main %}
+    {% load recipe_extras %}
+    <h1>Meal Plan</h1>
+    <form name='edit_meal_plan' action='{% url "recipes:update_plan" plan.id %}' method='post'>
+        {% csrf_token %}
+        <div class='fixed-bottom'>
+            <input type="submit" id="update_plan" value='Update Meal Plan' class='btn-sm btn-dark btn-block w-100'>  
+        </div>
+        <input type='hidden' id='plan_id' value='{{ plan.id }}'>
+        {% include 'recipes/plan_base_info.html' %}
+        <div class='m-2'></div>
+        <div id='plan-container' class='plan-container p-2 w-100'>
+            {% include 'recipes/plan_days.html' %}
+        </div>
+    </form>
+{% endblock %}

@@ -1,3 +1,7 @@
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
 .navbar {
     background-image: url(https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Fruits_veggies.png/1024px-Fruits_veggies.png);
     color:black;
@@ -75,8 +79,6 @@ main {
     float:right;
 }
 
-/* The below from https://openfolder.sh/django-tutorial-as-you-type-search-with-ajax
-for animating blinking search icon */
 @keyframes blinker {
     from {opacity: 1.0;}
     to {opacity: 0.0;}
@@ -99,6 +101,9 @@ for animating blinking search icon */
     display: inline-block;
 }
 
+.card:hover, .btn:hover {
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
 .indented {
     padding-left: 4ch;
 }
@@ -152,6 +157,14 @@ main {
     width:6ch;
 }
 
+.date-input {
+    width: 15ch;
+}
+
+.peep-input {
+    width:4ch;
+}
+
 select {
     padding: 4px;
     margin-right: 5px;
@@ -168,4 +181,58 @@ td {
 
 .smaller {
     font-size:smaller;
+}
+
+.txt-align-c {
+    text-align: center;
+}
+
+.meal-plan-card {
+    border: solid #003773 3px;
+}
+.recipe-search {
+    width: 100%;
+    padding: .5em;
+    border: solid lightgray 1px;
+    border-radius: 5px 5px 0% 0%;
+    outline:none;
+}
+.replaced_content_container {
+    position: relative;
+}
+.replaced_content {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 99;
+}
+.recipe_option {
+    padding: 5px 0px 5px 5px;
+    border: solid lightgray 1px;
+    border-bottom: none;
+    border-top: none;
+    background-color: white;
+    margin:0px 12px 0px 12px;
+}
+.recipe_option:last-of-type {
+    border-bottom: solid lightgray 1px;
+    border-radius: 0 0 5px 5px;
+}
+
+.recipe_option:hover {
+    background-color: lightgray;
+}
+.added_recipe {
+    width: 100%;
+    border: solid lightgray 1px;
+    border-radius: 5px;
+    padding: 0.5em;
+    margin:0;
+    margin-top: 0.25em;
+    background-color: #e8fff3;
+}
+.outlined {
+    border: solid lightgray 1px;
+    border-radius: 5px;
 }

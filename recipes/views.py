@@ -3,15 +3,17 @@ from django.http import HttpResponse, Http404, HttpResponseRedirect, JsonRespons
 from django.template import loader, RequestContext
 from django.template.loader import render_to_string
 from django.urls import reverse
-import json
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
+from django.core.paginator import Paginator
 
+import json
+from datetime import datetime, timezone, timedelta
 
-from .models import Recipe, Ingredient, IngQuant, Step, Favorites, Shop, Plan, ShoppingList
-from .models import VOLUME, WEIGHT, UNIT, UNIT_CHOICES, MEAL_CHOICES, CATEGORY_CHOICES, UNIT_DICT, CATEGORY_DICT
+from .models import Recipe, Ingredient, IngQuant, Step, Favorites, Shop, Plan, ShoppingList, MealPlan, PlannedMeal
+from .models import VOLUME, WEIGHT, UNIT, UNIT_CHOICES, MEAL_CHOICES, MEALTIME_CHOICES, CATEGORY_CHOICES, UNIT_DICT, CATEGORY_DICT
 from .convert_units import convert_units, get_smaller_unit
 from .forms import MealForm, UnitForm, CategoryForm, RecipePhotoForm
 
@@ -21,60 +23,180 @@ def normalize(data):
     return data.strip().lower()
 
 
+def query_shopping_lists(request):
+    shopping_lists = []
+    
+    if request.GET.get("q") == None:
+        lists = ShoppingList.objects.filter(user = request.user).order_by('-name')
+    else:
+        lists = ShoppingList.objects.filter(name__icontains=request.GET.get("q"), user = request.user)
+
+    for each in lists:
+        ingquants = each.get_ingquants()
+        ingredients = []
+        for ingquant in ingquants:
+            ingredients.append(ingquant)
+        shopping_lists.append([each, ingredients])
+    return shopping_lists
+
+
+def ajax(request, template, ctx):
+    template = loader.get_template(template)
+    html = template.render(ctx, request)
+    data_dict = {
+        "html_from_view": html, 
+        'success': True,
+    }
+    return JsonResponse(data=data_dict, safe=False)
+
+
+def personalize_if_user_not_owner(requesting_user, recipe):
+    if requesting_user != recipe.user:
+        search = Recipe.objects.filter(user = requesting_user).filter(name = recipe.name.lower()).filter(personalized = True)
+        # check if this personalized recipe is already in the database
+        if search.count() == 1:    # if it is
+            return  search[0]
+            
+        elif search.count() == 0:   # if it's not in the database already
+            # create a new instance of this recipe tied to the user
+            ingquants = IngQuant.objects.filter(recipe = recipe)
+            recipe.pk = None
+            recipe.save()
+            for instance in ingquants:
+                instance.pk = None
+                instance.recipe = recipe
+                instance.save()
+            recipe.user = requesting_user
+            recipe.personalized = True
+            recipe.public = False
+            recipe.save()
+            return recipe
+        else: # it's somehow gotten into the database too many times
+            return -1
+    else: 
+        return recipe
+
+
+def get_components(recipe):
+    components = []
+    ingquants = recipe.get_ingquants()
+    for ingquant in ingquants:
+        form = UnitForm(initial={'choose_unit': ingquant.unit.upper()}, prefix="name_" + str(ingquant.id))
+        components.append((ingquant, form))
+    return components
+
+
+@login_required
+def button_ajax(request):
+    return_data = {'success': False} 
+    if request.method=='POST':
+        data = json.loads(request.body)
+        model = data.get('model')
+        if model == 'shopping_list':
+            model_update = ShoppingList
+        else:
+            model_update = Recipe
+        recipe_id = data.get('recipe_id')
+        recipe = model_update.objects.get(pk = recipe_id)
+        action = data.get('tag')
+        action_dict = {
+            'shop': Shop,
+            'plan': Plan,
+            'favorite': Favorites 
+        }
+
+        user = request.user
+        model = action_dict[action]
+        
+        if model_update == ShoppingList:
+            match = model.objects.filter(shopping_list = recipe, user = user)
+        else:
+            match = model.objects.filter(recipe = recipe, user = user)
+
+        if match.count() == 0:
+            inst = model()
+            if model_update == ShoppingList:
+                inst.shopping_list = recipe
+            else:
+                inst.recipe = recipe
+            inst.user = user
+            inst.save()
+            return_data['success'] = True
+            return_data['action'] = "add"
+        else:
+            inst = match[0]
+            inst.delete()
+            return_data['success'] = True
+            return_data['action'] = "remove"
+    
+        source = data.get('source')
+        if source == 'shopping':
+            template = loader.get_template('recipes/current_shopping_list.html')
+            context = get_shopping_context(request)
+            html = template.render(context, request)
+            return_data["html_from_view"] = html
+            return JsonResponse(data=return_data, safe=False)
+        else:
+            return JsonResponse(return_data)
+    else: 
+        return HttpResponse("Something went wrong recording your button click on " + action)
+
+
 # Page views
 
 def index(request, model_name='recipe'):
     
+    # choose the model
     if model_name == "shopping_list":
         model = ShoppingList
     else:
         model = Recipe
 
+    # set the recipe_list to render
     if not request.user.is_authenticated:
         recipe_list = model.objects.filter(public = True).order_by('-name')
     else:
         user = request.user
-        # basic list already has 'mine' filter
+        
         recipe_list = model.objects.filter(user=user).order_by('-name')
-        print(recipe_list)  
-        filter = request.GET.get('radio')
-        filter_status = request.GET.get('status')
-        print('filter status', filter, filter_status)
-        if filter != None and filter_status == 'true':
-            if filter == 'all':
-                recipe_list = model.objects.filter(Q(user = user) | Q(public = True)).order_by('-name')
-            elif filter == 'public':
-                recipe_list = model.objects.filter(public = True).order_by('-name')
-            elif filter == 'favorites':
-                favorites = Favorites.objects.filter(user = user)
-                pks = []
-                for favorite in favorites:
-                    pks.append(favorite.recipe.id)
-                recipe_list = model.objects.filter(pk__in = pks)
-    if request.GET.get("q") != None:
-        recipe_list = recipe_list.filter(name__icontains=request.GET.get("q").lower())
+        
+        # parse data if this is a fetch request
+        if request.is_ajax():
+            data = json.loads(request.body)
+        else:
+            data = {}
 
-    ctx = {
-        'request': request, 
-    }
-    
-    if model == ShoppingList:
+        q_filter = data.get('radio')
+        # basic list already has 'mine' filter
+        if q_filter == None: q_filter = 'mine'
+        
+        if q_filter == 'mine':
+            recipe_list = model.objects.filter(user = user).order_by('-name')
+        elif q_filter == 'all':
+            recipe_list = model.objects.filter(Q(user = user) | Q(public = True)).order_by('-name')
+        elif q_filter == 'public':
+            recipe_list = model.objects.filter(public = True).order_by('-name')
+        elif q_filter == 'favorites':
+            favorites = Favorites.objects.filter(user = user)
+            pks = []
+            for favorite in favorites:
+                pks.append(favorite.recipe.id)
+            recipe_list = model.objects.filter(pk__in = pks)
+
+    if data.get("q") != None:
+        recipe_list = recipe_list.filter(name__icontains=data.get("q").lower())
+
+    ctx = {}
+
+    if model_name == 'shopping_list':
         ctx['shopping_lists'] = query_shopping_lists(request)
     else:
         ctx['recipe_list'] = recipe_list
-
+    
     if request.is_ajax():
         return ajax(request, 'recipes/index_cards.html', ctx)
 
     return render(request, "recipes/index.html", ctx) 
-
-def index_all(request):
-    if request.user.is_authenticated:
-        user = request.user
-        recipe_list = Recipe.objects.filter(Q(public = True) | Q(user = user)).order_by('-name')
-    else: 
-        recipe_list = Recipe.objects.filter(public = True).order_by('-name')
-    return render(request, "recipes/index.html", {'recipe_list': recipe_list, 'request': request}) 
 
 
 def detail(request, recipe_id):
@@ -163,8 +285,9 @@ def detail(request, recipe_id):
 
         return render(request, 'recipes/detail.html', ctx)
 
+
 @login_required
-def create_recipe(request):
+def create(request, creation):
     if request.method == "POST":
         new_recipe = request.POST.get("recipe_name")
         if request.POST.get('model') == 'recipe':
@@ -193,47 +316,13 @@ def create_recipe(request):
         else: 
             return HttpResponseRedirect(reverse("recipes:update_shopping_list", kwargs= { "recipe_id": add_recipe.id, }))
     else:
-        return render(request, 'recipes/create_recipe.html')
-
-
-def get_components(recipe):
-    components = []
-    ingquants = recipe.get_ingquants()
-    for ingquant in ingquants:
-        form = UnitForm(initial={'choose_unit': ingquant.unit.upper()}, prefix="name_" + str(ingquant.id))
-        components.append((ingquant, form))
-    return components
+        return render(request, 'recipes/create_recipe.html', {'model': creation})
 
 
 @login_required
 def display_edit_recipe(request, recipe_id):
     return display_edit(request, recipe_id, 'recipe')
 
-def personalize_if_user_not_owner(requesting_user, recipe):
-    if requesting_user != recipe.user:
-        search = Recipe.objects.filter(user = requesting_user).filter(name = recipe.name.lower()).filter(personalized = True)
-        # check if this personalized recipe is already in the database
-        if search.count() == 1:    # if it is
-            return  search[0]
-            
-        elif search.count() == 0:   # if it's not in the database already
-            # create a new instance of this recipe tied to the user
-            ingquants = IngQuant.objects.filter(recipe = recipe)
-            recipe.pk = None
-            recipe.save()
-            for instance in ingquants:
-                instance.pk = None
-                instance.recipe = recipe
-                instance.save()
-            recipe.user = requesting_user
-            recipe.personalized = True
-            recipe.public = False
-            recipe.save()
-            return recipe
-        else: # it's somehow gotten into the database too many times
-            return -1
-    else: 
-        return recipe
 
 @login_required
 def record_edit_recipe(request, recipe_id):
@@ -281,7 +370,6 @@ def add_ingredient(request, ingredient_id = None, source = 'recipe'):
             ing.polyunsatfats = request.POST.get('polyunsatfats' + '_' + str(ing_id))
 
         ing.user = request.user
-        ing.recipe = recipe
         
         ing.save()
         return ing
@@ -370,10 +458,12 @@ def add_ingredient(request, ingredient_id = None, source = 'recipe'):
         update_ingquant.quantity = quantity
         update_ingquant.unit = unit
         update_ingquant.save()
+
     if source == 'shopping_list':
         return HttpResponseRedirect(reverse("recipes:update_shopping_list", args=(recipe_id,)))
     else:
         return HttpResponseRedirect(reverse("recipes:display_edit_recipe", args=(recipe_id,)))
+
 
 def get_shopping_context(request):
     def shopping_helper(ingquant, check_ings, list_ingredients):
@@ -464,122 +554,101 @@ def get_shopping_context(request):
     }
     return context
 
+
 @login_required
 def shopping(request):
     context = get_shopping_context(request)
     return render(request, 'recipes/shopping.html', context)
     
-def query_shopping_lists(request):
-    shopping_lists = []
-    
-    if request.GET.get("q") == None:
-        lists = ShoppingList.objects.filter(user = request.user).order_by('-name')
-    else:
-        lists = ShoppingList.objects.filter(name__icontains=request.GET.get("q"), user = request.user)
-
-    for each in lists:
-        ingquants = each.get_ingquants()
-        ingredients = []
-        for ingquant in ingquants:
-            ingredients.append(ingquant)
-        shopping_lists.append([each, ingredients])
-    return shopping_lists
-
-@login_required
-def planning(request):
-    return HttpResponse("TODO")
-
-
-@login_required
-def button_ajax(request):
-    data = {'success': False} 
-    if request.method=='POST':
-        model = request.POST.get('model')
-        if model == 'shopping_list':
-            model_update = ShoppingList
-        else:
-            model_update = Recipe
-        recipe_id = request.POST.get('recipe_id')
-        recipe = model_update.objects.get(pk = recipe_id)
-        action = request.POST.get('tag')
-        action_dict = {
-            'shop': Shop,
-            'plan': Plan,
-            'favorite': Favorites 
-        }
-
-        user = request.user
-        model = action_dict[action]
-        
-        if model_update == ShoppingList:
-            match = model.objects.filter(shopping_list = recipe, user = user)
-        else:
-            match = model.objects.filter(recipe = recipe, user = user)
-
-        if match.count() == 0:
-            inst = model()
-            if model_update == ShoppingList:
-                inst.shopping_list = recipe
-            else:
-                inst.recipe = recipe
-            inst.user = user
-            inst.save()
-            data['success'] = True
-            data['action'] = "add"
-        else:
-            inst = match[0]
-            inst.delete()
-            data['success'] = True
-            data['action'] = "remove"
-        
-        source = request.POST.get('source')
-        if source == 'shopping':
-            template = loader.get_template('recipes/current_shopping_list.html')
-            context = get_shopping_context(request)
-            html = template.render(context, request)
-            print(html)
-            data["html_from_view"] = html
-            return JsonResponse(data=data, safe=False)
-        else:
-            return JsonResponse(data)
-    else: 
-        return HttpResponse("Something went wrong recording your button click on " + action)
 
 @login_required
 def update_ingredients(request):
-    data = {'success': False} 
     
     if request.method=='POST':
-        action = request.POST.get('tag')
-        requesting_user = User.objects.get(pk=int(request.POST.get('user_id')))
-        ingquant = IngQuant.objects.get(pk = request.POST.get('ingquant_id'))
-        recipe = ingquant.recipe
-    
-        personalize_if_user_not_owner(requesting_user, recipe)
+        data = json.loads(request.body)
+
+        action = data.get('tag')
+        requesting_user = request.user
+        ingquant = IngQuant.objects.get(pk = data.get('ingquant_id'))
+        
+        if ingquant.recipe:
+            recipe = ingquant.recipe
+            model = Recipe
+        elif ingquant.shopping_list:
+            recipe = ingquant.shopping_list
+            model = ShoppingList
+            
+        if model == Recipe:
+            recipe = personalize_if_user_not_owner(requesting_user, recipe)
 
         # complete the requested action
-        if action == 'rem':
-            ctx = {}
+        if action == 'rem' and recipe != -1:
+            ctx = {
+                "components": get_components(recipe),
+                'unit_choices': UNIT_CHOICES,
+                'category_choices': CATEGORY_CHOICES,
+            }
             ingquant.delete()
             recipe.save()
-            
-            ctx["components"] = get_components(recipe)
-            template = loader.get_template('recipes/added_ingredients_list.html')
-            context = ctx
-            html = template.render(context, request)
-            data = {
-                "html_from_view": html, 
-                'success': True,
-            }
-            return JsonResponse(data=data, safe=False)
+
     
-    return HttpResponse("Something went wrong with updating ingredients.")
+        elif action =='edt':
+
+            ingredient = ingquant.ingredient
+            
+            # check to see if it is already personalized
+            if ingredient.ingredient[:3] != 'my ':
+                # check to see if the personalized ingredient name is in the database
+                if Ingredient.objects.filter(ingredient = 'my ' + ingredient.ingredient).count() != 0:
+                    ingredient = Ingredient.objects.filter(ingredient = 'my ' + ingredient.ingredient)[0]
+                else:
+                    # create a new ingredient if not already personalized
+                    ingredient = Ingredient(
+                        ingredient = 'my ' + ingredient.ingredient,
+                        user = request.user
+                    )
+                    ingredient.save()
+                
+            # update the ingredient
+            if data.get('ing_category'): ingredient.category = CATEGORY_DICT[data.get('ing_category')]
+            if data.get('serving_size'): ingredient.typical_serving_size = data.get('serving_size')
+            if data.get('serving_unit'): ingredient.typical_serving_unit = data.get('serving_unit')
+            if data.get('weight'): ingredient.weight_per_serving = data.get('weight')
+            if data.get('calories'): ingredient.calories = data.get('calories')
+            if data.get('fat'): ingredient.fat = data.get('fat')
+            if data.get('transfat'): ingredient.transfats = data.get('transfat')
+            if data.get('satfat'): ingredient.satfats = data.get('satfat')
+            if data.get('polyunsatfat'): ingredient.polyunsatfats = data.get('polyunsatfat')
+            if data.get('monounsatfat'): ingredient.monounsatfats = data.get('monounsatfat')
+            if data.get('cholesterol'): ingredient.cholesterol = data.get('cholesterol')
+            if data.get('sodium'): ingredient.sodium = data.get('sodium')
+            if data.get('carbs'): ingredient.carbs = data.get('carbs')
+            if data.get('fiber'): ingredient.fiber = data.get('fiber')
+            if data.get('sugar'): ingredient.sugar = data.get('sugar')
+            if data.get('protein'): ingredient.protein = data.get('protein')  
+            ingredient.save()  
+
+            # update the ingquant with the updated ingredient
+            ingquant.ingredient = ingredient
+            ingquant.save()
+            
+        ctx = {
+            "components": get_components(recipe),
+            'unit_choices': UNIT_CHOICES,
+            'category_choices': CATEGORY_CHOICES,
+        }
+        return ajax(request, 'recipes/added_ingredients_list.html', ctx)
+    
+    return HttpResponse("POST request required")
+
 
 def delete_recipe(request, recipe_id):
     return delete(request, Recipe, recipe_id, ingredient_id = None)
 
+
 def delete_list(request, recipe_id):
     return delete(request, ShoppingList, recipe_id, ingredient_id = None)
+
 
 def delete(request, model, recipe_id, ingredient_id = None):
     
@@ -597,7 +666,6 @@ def delete(request, model, recipe_id, ingredient_id = None):
         model = Ingredient
         destination = 'send to error dest'
         delete_object = model.objects.get(pk = ingredient_id)
-    print('model, dest, error dest', model, destination, error_destination)
     requesting_user = request.user
 
     if delete_object.user.id == requesting_user.id:
@@ -609,14 +677,15 @@ def delete(request, model, recipe_id, ingredient_id = None):
     else:
         messages.info(request, 'You cannot delete something that does not belong to you.')
         return HttpResponseRedirect(reverse(error_destination, args=(recipe_id,)))
-    
+
+
 def cancel(request):
     valuenext = request.POST.get('next')
     return HttpResponseRedirect(valuenext)
 
+
 def display_edit(request, object_id, model_name):
     ctx = {  
-        'user_id': request.user.id,
         'unit_choices': UNIT_CHOICES,
         'category_choices': CATEGORY_CHOICES,
         'model': model_name
@@ -660,20 +729,28 @@ def display_edit(request, object_id, model_name):
     ctx["components"] = get_components(recipe)
 
     ingredients = None
-    searched = False
-    url_parameter = request.GET.get("q")
-    ctx["search"] = url_parameter
-    if url_parameter:
-        url_parameters = url_parameter.split()
-        args = []
-        for param in url_parameters:
-            param = param.strip(", /-")
-            args.append(Q(ingredient__icontains=param))
-        # need to only return ingredients that are public or belong to the user
-        ingredients = Ingredient.objects.filter(*args).filter(Q(user = None) | Q(user = request.user))
-        ctx["ingredients"] = ingredients
 
     if request.is_ajax():
+        data = json.loads(request.body)
+        url_parameter = data.get("q").strip()
+        ctx["search"] = url_parameter
+
+        if url_parameter == '':
+            ctx['searched'] = False
+        elif url_parameter:
+            ctx['searched'] = True
+            url_parameters = url_parameter.split()
+            args = []
+            for param in url_parameters:
+                param = param.strip(", /-")
+                args.append(Q(ingredient__icontains=param))
+            # need to only return ingredients that are public or belong to the user
+            ingredients = Ingredient.objects.filter(*args).filter(Q(user = None) | Q(user = request.user))
+            if ingredients.count() > 0:
+                ctx["ingredients"] = ingredients
+            else:
+                ctx['searched'] = True
+
         return ajax(request, 'recipes/ingredient_list.html', ctx)
 
     if model == Recipe:
@@ -681,15 +758,6 @@ def display_edit(request, object_id, model_name):
     else:
         return render(request, 'recipes/edit_shopping_list.html', context = ctx)
 
-def ajax(request, template, ctx):
-    ctx['searched'] = True
-    template = loader.get_template(template)
-    context = ctx
-    html = template.render(context, request)
-    data_dict = {
-        "html_from_view": html, 
-    }
-    return JsonResponse(data=data_dict, safe=False)
 
 def record_edit(request, object_id, model):
     recipe = model.objects.get(pk = object_id)
@@ -762,50 +830,91 @@ def record_edit(request, object_id, model):
         component.save()
 
     recipe.save()
-
-    print('requests', request.POST.get('add_to_recipe'), request.POST.get('add_ingredient'), request.POST.get('save_ingredient'), request.POST.get('delete_ingredient'))
-    if request.POST.get('add_to_recipe') != None:
-        added_ingredient = Ingredient.objects.filter(ingredient = request.POST['ingredient_name'])
-        if added_ingredient[0].id not in components_ingredients:
-            ing = IngQuant(
-                ingredient = added_ingredient[0],
-            )
-            if model == Recipe:
-                ing.recipe = recipe
-            else:
-                ing.shopping_list = recipe
-            ing.save()
-        # already added to ingredients list
-        else:
-            messages.info(request, added_ingredient[0].ingredient + " is already in the ingredients list.")
-        return HttpResponseRedirect(reverse(destination, args=(recipe.id,)))
     
     if model == Recipe:
         model_name = 'recipe'
     else:
         model_name = 'shopping_list'
 
-    if request.POST.get('add_ingredient') != None:
-        return add_ingredient(request, source = model_name)
+    # if request.POST.get('add_ingredient') != None:
+    #     return add_ingredient(request, source = model_name)
     
-    if request.POST.get('save_ingredient') != None:
-        ingredient_id = request.POST.get('save_ingredient')[16:]
-        return add_ingredient(request, ingredient_id, source = model_name)
+    # if request.POST.get('save_ingredient') != None:
+    #     ingredient_id = request.POST.get('save_ingredient')[16:]
+    #     return add_ingredient(request, ingredient_id, source = model_name)
     
-    if request.POST.get('delete_ingredient') != None:
-        ingredient_id = request.POST.get('delete_ingredient')[18:]
-        return delete(request, model, recipe.id, ingredient_id)
+    # if request.POST.get('delete_ingredient') != None:
+    #     ingredient_id = request.POST.get('delete_ingredient')[18:]
+    #     return delete(request, model, recipe.id, ingredient_id)
  
     if model == Recipe:
         return HttpResponseRedirect(reverse("recipes:detail", args=(recipe.id,)))
     else:
         return HttpResponseRedirect(reverse("recipes:detail_shopping_list", args=(recipe.id,)))
 
+
+def delete_ing(request, recipe_id):
+    data = json.loads(request.body)
+    ingredient = Ingredient.objects.get(pk = data.get('ing_id'))
+    ingredient.delete()
+
+    model = data.get('model')
+    if model == 'recipe':
+        model = Recipe
+    elif model == 'shopping_list':
+        model = ShoppingList
+
+    recipe = model.objects.get(pk = recipe_id)
+
+    return ajax(request, 'recipes/added_ingredients_list.html', {'components': get_components(recipe)})
+
+
+def add_ing_to_list(request, recipe_id):
+    data = json.loads(request.body)
+
+    if data.get('model') == 'recipe':
+        model = Recipe
+    elif data.get('model') == 'shopping_list':
+        model = ShoppingList
+
+    recipe = model.objects.get(pk = recipe_id)
+    if model == Recipe:
+        ingquants = IngQuant.objects.filter(recipe = recipe)
+    elif model == ShoppingList:
+        ingquants = IngQuant.objects.filter(shopping_list = recipe)
+
+    components = []
+    for ingquant in ingquants:
+        components.append(ingquant.ingredient)
+    
+    added_ingredient = Ingredient.objects.get(pk = data.get('ingredient_id'))
+    if added_ingredient not in components:
+        if model == Recipe:
+            ing = IngQuant(
+                ingredient = added_ingredient,
+                recipe = recipe
+            )
+        elif model == ShoppingList:
+            ing = IngQuant(
+                ingredient = added_ingredient,
+                shopping_list = recipe
+            )
+        ing.save()
+        components.append(ing)
+    # already added to ingredients list
+    else:
+        messages.info(request, f"'{added_ingredient.ingredient[0].upper()}{added_ingredient.ingredient[1:]}' is already in the ingredients list.")
+    
+    return ajax(request, 'recipes/added_ingredients_list.html', {'components': get_components(recipe)})
+
+
 def update_shopping_list(request, recipe_id):
     return display_edit(request, recipe_id, 'shopping_list')
 
+
 def record_shopping_list(request, recipe_id):
     return record_edit(request, recipe_id, ShoppingList)
+
 
 def detail_shopping_list(request, recipe_id):
     if request.method == "POST":
@@ -827,5 +936,545 @@ def detail_shopping_list(request, recipe_id):
 
         return render(request, 'recipes/detail_shopping_list.html', ctx)
 
+
 def index_shopping_lists(request):
     return index(request, model_name = 'shopping_list')
+
+
+def get_plan_objects(request):
+    elements = Plan.objects.filter(user = request.user)
+    recipes = []
+    ingredients = []
+    for element in elements:
+        try:
+            if element.recipe != None:
+                recipes.append(element.recipe)
+        except:
+            try:
+                if element.ingredient != None:
+                    ingredients.append(element.ingredient)
+            except:
+                messages.info(request, 'Something went wrong with loading your planned recipes.')
+                return -1
+    
+    return (recipes, ingredients)
+
+
+@login_required
+def planning(request):
+    plans = MealPlan.objects.filter(user = request.user)
+
+    paginator = Paginator(plans, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    current_plan = MealPlan.objects.latest('id')
+    days = range(current_plan.days)
+    ctx = get_display_edit_plan_ctx(request, current_plan.id)
+    ctx.update({
+        'current_plan': current_plan,
+        'display_only': True,
+        'page_obj': page_obj,
+    })
+    return render(request, 'recipes/mealplanning.html', context = ctx)
+
+
+@login_required
+def create_plan(request):
+
+    plan_number = MealPlan.objects.filter(user = request.user).count() + 1  
+    # objects = get_plan_objects(request)
+        
+    # if objects != -1:
+    #     recipes = objects[0]
+    #     ingredients = objects[1]
+    #     ctx = {
+    #         'recipes': recipes,
+    #         'ingredients': ingredients,
+    #         'plan_number': plan_number,
+    #         'meal_time_choices': MEALTIME_CHOICES,
+    #         'today': datetime.today().strftime('%Y-%m-%d')
+    #     }
+    # else: 
+    ctx = {
+        'plan_number': plan_number,
+        'meal_time_choices': MEALTIME_CHOICES,
+        'today': datetime.now().strftime('%Y-%m-%d')
+    }
+        
+    if request.method == 'POST':
+        
+        name = request.POST.get('name') 
+        people = request.POST.get('people')
+        start_date = request.POST.get('startdate')
+        end_date = request.POST.get('enddate')
+        days = request.POST.get('days')
+        notes = request.POST.get('notes')
+        breakfast = request.POST.get('breakfast')
+        lunch = request.POST.get('lunch')
+        dinner = request.POST.get('dinner')
+        snack = request.POST.get('snack')
+        dessert = request.POST.get('dessert') 
+        other = request.POST.get('other')
+
+        # Check to make sure name is unique
+        if MealPlan.objects.filter(name = name, user = request.user).count() > 0:
+            messages.info(request, ("You already have a plan called " + name + ". Please use a unique name."))
+            ctx['plan'] = MealPlan.objects.filter(name = name, user = request.user)[0]
+            return render(request, 'recipes/create_plan.html', ctx) 
+        
+        # Check to make sure number of days is > 0
+        if int(days) <= 0:
+            messages.info(request, ("Please enter a positive number of days."))
+            return render(request, 'recipes/create_plan.html', ctx) 
+        
+        # Check to make sure dates and number of days match
+        start_date = datetime.strptime(start_date, '%Y-%m-%d')
+        end_date = datetime.strptime(end_date, '%Y-%m-%d')
+        calculated_days = (end_date - start_date).days
+        if calculated_days != int(days):
+            messages.info(request, ("Calculated number of days does not match number of days entered."))
+            return render(request, 'recipes/create_plan.html', ctx) 
+
+        # Check to make sure number of people is > 0
+        if int(people) <= 0:
+            messages.info(request, ("Please enter a positive number of people."))
+            return render(request, 'recipes/create_plan.html', ctx) 
+
+        meals = {
+            'breakfast': breakfast,
+            'lunch': lunch,
+            'dinner': dinner,
+            'snack': snack,
+            'dessert': dessert,
+            'other': other,
+        }
+        # record which meals will be planned
+        for key in meals.keys():
+            if meals[key] == None:
+                meals[key] = False
+            else:
+                meals[key] = True
+
+
+        new_plan = MealPlan(
+            name = name,
+            user = request.user,
+            notes = notes,
+            start_date = start_date,
+            end_date = end_date,
+            days = days, 
+            people = people,
+            breakfast = meals['breakfast'],
+            lunch = meals['lunch'], 
+            dinner = meals['dinner'], 
+            snack = meals['snack'], 
+            dessert = meals['dessert'], 
+            other = meals['other'],
+        )
+        new_plan.save()
+
+        # create and save all the new planned meals
+        meals = get_plan_meals(new_plan)[0]
+        for day in range(int(days)):
+            for meal in meals:
+                planned_meal = PlannedMeal(
+                    meal = meal,
+                    day = day,
+                    meal_plan = new_plan,
+                    user = request.user,
+                    servings = people
+                )
+                planned_meal.save()
+
+        return HttpResponseRedirect(reverse("recipes:display_edit_plan", kwargs= {"plan_id": new_plan.id,}))
+        
+    return render(request, 'recipes/create_plan.html', context = ctx)
+
+
+def get_plan_meals(plan):
+    meal_attribs = {
+        'breakfast': plan.breakfast,
+        'brunch': plan.brunch,
+        'lunch': plan.lunch,
+        'dinner': plan.dinner,
+        'snack': plan.snack,
+        'dessert': plan.dessert,
+        'other': plan.other,
+    }
+
+    # get a list of the meals for the plan
+    meals = []
+    add_meals = []
+    for key in meal_attribs.keys():
+        if meal_attribs[key]:
+            meals.append(key)
+        else: 
+            add_meals.append(key)
+    
+    return (meals, add_meals)
+
+
+def get_display_edit_plan_ctx(request, plan_id):
+    # get the plan itself
+    plan = MealPlan.objects.get(pk = plan_id)
+
+    # get a dictionary of planned meals with a key of the day
+    # int for day: [list of planned meals for that day])
+    planned_meals = {}
+    days = []
+    for i in range(plan.days):
+        planned_meals[i] = []
+        for meal in MEALTIME_CHOICES:
+            this_meal = PlannedMeal.objects.filter(
+                meal_plan = plan, 
+                day = i, 
+                user=request.user,
+                meal = meal[1]
+                )
+            if this_meal:
+                planned_meals[i].append(this_meal[0])
+
+        meals_planned = []
+        add_meals = []
+        for meal in MEALTIME_CHOICES:
+            if PlannedMeal.objects.filter(meal_plan = plan, day = i, user=request.user, meal = meal[1]):
+                meals_planned.append(meal[1])
+            else:
+                add_meals.append(meal[1])
+        days.append((int(i), meals_planned, add_meals))
+    
+    planned = get_plan_meals(plan)
+    meals = planned[0]
+    # add_meals = planned[1]
+
+    ctx = {
+        'plan': plan, 
+        'meals': meals,
+        'meal_time_choices': MEALTIME_CHOICES,
+        # 'add_meals': add_meals,
+        'planned_meals': planned_meals,
+        'days': days
+    }
+
+    # get the recipes and ingredients lined up for the plan
+    objects = get_plan_objects(request)
+    if objects != -1:
+        ctx['recipes'] = objects[0]
+        ctx['ingredients'] = objects[1]
+
+    return ctx
+
+
+def plan_add_recipe(request, plan_id):
+    plan = MealPlan.objects.get(pk = plan_id)
+    data = json.loads(request.body)
+
+    recipe_id = data.get("recipe_id").strip()
+    recipe = Recipe.objects.get(pk = recipe_id)
+    if recipe == None:
+        return JsonResponse({'messages': 'Recipe not found.'})
+
+    day = int(data.get("day").strip())   
+    meal = data.get("meal").strip().lower()
+
+    # try to get a planned meal
+    try: 
+        planned_meal = PlannedMeal.objects.get(user = request.user, meal_plan = plan, meal = meal, day = day)
+
+    except PlannedMeal.DoesNotExist:
+        print('creating new plan - caution - this should not happen yet')
+        # add a new meal if one does not exist yet
+        planned_meal = PlannedMeal(
+            user = request.user,
+            meal_plan = plan,
+            meal = meal,
+            day = day,
+        )
+        planned_meal.save()
+
+    if data.get('add_or_remove') == 'add':
+        # add the selected food to the planned meal
+        planned_meal.recipes.add(recipe)
+    else:
+        # remove the selected recipe
+        planned_meal.recipes.remove(recipe)
+
+    # return html
+    return ajax(request, 'recipes/plan_added_recipes.html', {
+        'recipes': planned_meal.recipes.all(),
+        'day': day,
+        'meal': meal
+    })
+
+
+def list_recipes(request, plan_id):
+
+    plan = MealPlan.objects.get(pk = plan_id)
+    data = json.loads(request.body)
+    q = data.get("q").strip()
+
+    qs = q.split()
+    args = []
+    for param in qs:
+        param = param.strip(", /-")
+        args.append(Q(name__icontains=param))
+    # need to only return recipes that are public or belong to the user
+    recipes = Recipe.objects.filter(*args).filter(Q(public = True) | Q(user = request.user))
+
+    return ajax(request, 'recipes/recipe_list.html', {'recipes': recipes})
+
+
+@login_required
+def display_edit_plan(request, plan_id):
+    
+    ctx = get_display_edit_plan_ctx(request, plan_id)
+
+    return render(request, 'recipes/edit_meal_plan.html', context = ctx)
+
+
+@login_required
+def record_planned_meal(request):
+
+    # get the plan itself
+    plan_id = request.POST.get('plan_id')
+    plan = MealPlan.objects.get(pk = plan_id)
+
+    # and the info we already have about the planned meal
+    user = request.user
+    day = request.POST.get('day')
+    meal = request.POST.get('meal')
+    
+    meal_id = request.POST.get('meal_id')
+    if meal_id:
+        planned_meal = PlannedMeal.objects.get(pk = meal_id)
+    else:
+        # create a new planned meal
+        planned_meal = PlannedMeal(
+            meal = meal,
+            day = day,
+            meal_plan = plan,
+            user = user,
+        )
+    planned_meal.save()
+
+    # info to be recorded
+    food_type = request.POST.get('food_type')
+    food_id = request.POST.get('food_id')
+    servings = request.POST.get('servings')
+
+    if food_type != None and food_id != None:
+        if food_type == 'rec':
+            recipe = Recipe.objects.get(pk = food_id)
+            planned_meal.recipes.add(recipe)
+        elif food_type == 'ing':
+            ing = Ingredient.objects.get(pk = food_id)
+            planned_meal.ingredients.add(ing)
+        else:
+            message.info(request, 'Error recording food addition to a meal.')
+
+    if servings != None:
+        planned_meal.servings = servings
+    
+    planned_meal.save()
+
+    ctx = get_display_edit_plan_ctx(request, plan_id)
+    ctx['day'] = int(planned_meal.day)
+    
+    return ajax(request, 'recipes/meal_plan_card.html', ctx)
+
+
+@login_required
+def index_plans(request):
+    plans = MealPlan.objects.filter(user = request.user)
+    return render(request, 'recipes/plan_index.html', {'plans': plans})
+
+
+def save_plan(request, plan_id):
+    plan = MealPlan.objects.get(pk = plan_id)
+     
+    # get all the planned meals that are associated with this plan
+    planned_meals = plan.planned_meals.all()
+
+    # for each meal
+    for pm in planned_meals:
+        day = str(pm.day).rjust(3, '0')
+        meal = pm.meal
+        # record the number of servings per meal
+        servings = request.POST.get('meal_servings_' + day + '_' + meal)
+        if servings:
+            pm.servings = servings
+        # record any notes
+        notes = request.POST.get('notes_' + day + '_' + meal)
+        if notes:
+            pm.notes = notes
+        pm.save()
+
+    # record the notes about this plan
+    notes = request.POST.get('notes')
+    if notes:
+        plan.notes = notes
+
+    # record the number of people
+    people = request.POST.get('people')
+    if people:
+        plan.people = people
+    
+    plan.save()
+    return 
+
+
+def update_and_edit_plan(request, plan_id):
+    save_plan(request, plan_id)
+
+    return HttpResponseRedirect(reverse("recipes:display_edit_plan", kwargs= {"plan_id": plan_id,}))
+
+
+@login_required
+def update_plan(request, plan_id):
+    
+    save_plan(request, plan_id)
+
+    return HttpResponseRedirect(reverse("recipes:plan_detail", kwargs= {"plan_id": plan_id,}))
+
+
+def update_plan_ajax(request, plan_id):
+    data = json.loads(request.body)
+    plan = MealPlan.objects.get(pk = plan_id)
+
+    day = data.get('day')
+    meal = data.get('meal')
+
+    if data.get('add_meal') and PlannedMeal.objects.filter(
+            meal = meal,
+            day = day,
+            meal_plan = plan,
+            user = request.user
+        ).count() == 0:
+        planned_meal = PlannedMeal(
+                meal = meal,
+                day = day,
+                meal_plan = plan,
+                user = request.user,
+                servings = plan.people
+            )
+        planned_meal.save()
+
+    elif data.get('remove_meal'):
+        if data.get('meal') == 'day':
+            # delete all the meals for that day
+            meals_of_the_day = PlannedMeal.objects.filter(
+                day = day,
+                meal_plan = plan,
+                user = request.user
+            )
+            if meals_of_the_day:
+                for meal in meals_of_the_day:
+                    meal.delete()
+
+            # below is code to update the number of days in the plan. 
+            # However, I chose to keep the plan as is in case a user wants to just 
+            # skip planning something for that day but not adjust the whole plan.
+            # update the meal plan's info       
+            # plan.days = plan.days - 1
+            # end_date = plan.end_date + timedelta(days = -1)
+            # plan.save()
+
+        else:
+            planned_meal = PlannedMeal.objects.get(
+                meal = meal,
+                day = day,
+                meal_plan = plan,
+                user = request.user,
+            )
+            planned_meal.delete()
+
+    meals_planned = []
+    add_meals = []
+    for meal in MEALTIME_CHOICES:
+        if PlannedMeal.objects.filter(meal_plan = plan, day = day, user=request.user, meal = meal[1]):
+            meals_planned.append(meal[1])
+        else:
+            add_meals.append(meal[1])
+
+    ctx = get_display_edit_plan_ctx(request, plan.id)
+    ctx['day'] = (int(day), meals_planned, add_meals)
+    return ajax(request, 'recipes/meal_plan_card.html', ctx)
+
+
+def add_base_meals(request, plan_id):
+    data = json.loads(request.body)
+    plan = MealPlan.objects.get(pk = plan_id)
+    meal = data.get('meal')
+    add = data.get('add')
+
+    # update the plan as a whole
+    if meal == 'breakfast': plan.breakfast = add
+    if meal == 'brunch': plan.brunch = add
+    if meal == 'lunch': plan.lunch = add
+    if meal == 'dinner': plan.dinner = add
+    if meal == 'snack': plan.snack = add
+    if meal == 'dessert': plan.dessert = add
+    if meal == 'other': plan.other = add
+    print(plan.brunch)
+    plan.save()
+
+    # update each planned meal
+    for day in range(plan.days):
+
+        planned_meal = PlannedMeal.objects.filter(
+                meal = meal,
+                day = day,
+                meal_plan = plan,
+                user = request.user
+            )
+
+        if add == True and planned_meal.count() == 0:
+            # add the meal to every day that doesn't already have it
+            new_meal = PlannedMeal(
+                meal = meal,
+                day = day,
+                meal_plan = plan,
+                user = request.user,
+                servings = plan.people
+            )
+            new_meal.save()
+
+        elif add == False and planned_meal.count() == 1:
+            # remove any of the named meal that doesn't alreay have data
+            planned_meal = PlannedMeal.objects.get(
+                    meal = meal,
+                    day = day,
+                    meal_plan = plan,
+                    user = request.user,
+                )
+            print(planned_meal.recipes.all(), planned_meal.ingredients.all(), planned_meal.notes)
+            if planned_meal.recipes.all() or planned_meal.ingredients.all() or planned_meal.notes:
+                pass
+            else:
+                planned_meal.delete()             
+
+    ctx = get_display_edit_plan_ctx(request, plan.id)
+
+    return ajax(request, 'recipes/plan_days.html', ctx)
+
+
+def update_days(request, plan_id):
+    data = json.loads(request.body)
+    plan = MealPlan.objects.get(pk = plan_id)
+
+    startdate = data.get('startdate')
+    enddate = data.get('enddate')
+
+    if datetime.strptime(startdate, '%Y-%m-%d').date() != plan.start_date:
+        print('start', datetime.strptime(startdate, '%Y-%m-%d').date(), type(plan.start_date))
+    elif datetime.strptime(enddate, '%Y-%m-%d').date() != plan.end_date:
+        print('end', datetime.strptime(enddate, '%Y-%m-%d').date(), plan.end_date)
+
+
+def plan_detail(request, plan_id):
+    
+    ctx = get_display_edit_plan_ctx(request, plan_id)
+    ctx['display_only'] = True
+
+    return render(request, 'recipes/plan_display.html', context = ctx)

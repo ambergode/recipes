@@ -20,6 +20,7 @@ median TEXT, footnote TEXT, min_year_acqured TEXT);
 # amount is per 100g of product
 # desired nutrients (nutrient_incoming_name.nutrient_id)
 [1093, 1079, 1292, 1004, 1003, 1008, 1293, 1005, 2033, 1258, 1253, 1257, 1063] 
+--> 2000 apparently stands for sugar for legacy foods? This is not properly labeled in incoming_nutrient_names
 
 SELECT DISTINCT(nin.nutrient_id), nutrient.name, food_nutrient.amount, nutrient.unit_name
 FROM (food_nutrient 
@@ -86,3 +87,23 @@ SELECT DISTINCT(measure_unit.name), food_portion.amount, food_portion.gram_weigh
 JOIN measure_unit ON measure_unit.id = food_portion.measure_unit_id
 WHERE fdc_id = 174669 
 LIMIT 1;
+
+
+SELECT nin.nutrient_id, nutrient.name, food_nutrient.amount, nutrient.unit_name
+FROM (food_nutrient 
+JOIN nutrient_incoming_name AS nin ON nin.nutrient_id = food_nutrient.nutrient_id)
+JOIN nutrient ON nin.nutrient_id = nutrient.id
+WHERE fdc_id = 175219
+AND nin.nutrient_id IN (1063);
+
+fdc_id = 175219
+nutrient_id = 1063
+
+321359
+746778
+
+
+SELECT DISTINCT(food_portion.modifier), measure_unit.name, food_portion.amount, food_portion.gram_weight
+   FROM food_portion JOIN measure_unit ON measure_unit.id = food_portion.measure_unit_id
+   WHERE fdc_id = 327046;
+
