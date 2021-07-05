@@ -70,11 +70,14 @@ function reload_partial_page(html_from_view, reload_div, listeners = undefined) 
         }
 
         if (listeners && listeners.includes('add_ing')) {
-            document.querySelector('#add_to_recipe').addEventListener('click', (evt) =>{
-                add_ingredient(evt)
-                document.querySelector("#user-input").value = ''   
-                document.querySelector('#replaceable-content').innerHTML=""
-            })
+            let element = document.querySelector('#add_to_recipe')
+            if (element) {
+                element.addEventListener('click', (evt) =>{
+                    add_ingredient(evt)
+                    document.querySelector("#user-input").value = ''   
+                    document.querySelector('#replaceable-content').innerHTML=""
+                })
+            }
         }
 
         return false;
@@ -648,6 +651,16 @@ function schedule_list_call_helper(input_html) {
 }
 
 
+function schedule_function() {
+    // if scheduled_function is NOT false, cancel the execution of the function
+    if (scheduled_function) {
+        clearTimeout(scheduled_function)
+    }
+    // setTimeout returns the ID of the function to be executed
+    scheduled_function = setTimeout(fetch_call, 500)
+    return scheduled_function
+}
+
 // document.querySelector('form[name="edit_meal_plan"]').action = `update_and_edit_plan/`
 // document.querySelector('#update_plan').click()
 
@@ -673,7 +686,7 @@ $(function(){ // this will be called when the DOM is ready
     radios = document.querySelectorAll('input[name="group"]')
     radios.forEach(radio => {
         radio.addEventListener('click', () => {
-            scheduled_function = schedule_function(scheduled_function)
+            scheduled_function = schedule_function()
         })
     })
 
@@ -756,7 +769,7 @@ $(function(){ // this will be called when the DOM is ready
     if (ppl) {
         ppl.addEventListener('change', update_ppl)
     }
-    
+
     const meals = document.querySelectorAll('.meal_time_choices')
     meals.forEach(meal => {
         meal.addEventListener('change', update_meals)
