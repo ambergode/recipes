@@ -1,1 +1,7 @@
 .env
+.pyc
+.csv
+.DS_Store
+.jpeg
+.png
+.JPG
