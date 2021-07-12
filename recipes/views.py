@@ -968,9 +968,20 @@ def planning(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    current_plan = MealPlan.objects.latest('id')
-    days = range(current_plan.days)
-    ctx = get_display_edit_plan_ctx(request, current_plan.id)
+    today = datetime.today()
+    active_plans = MealPlan.objects.filter(start_date__lte=today, end_date__gte=today)
+    if active_plans:
+        current_plan = active_plans[0]
+    else:
+        try:
+            current_plan = MealPlan.objects.latest('id')
+        except MealPlan.DoesNotExist:
+            current_plan = None
+
+    ctx = {}
+    if current_plan:
+        days = range(current_plan.days)
+        ctx = get_display_edit_plan_ctx(request, current_plan.id)
     ctx.update({
         'current_plan': current_plan,
         'display_only': True,
@@ -983,19 +994,7 @@ def planning(request):
 def create_plan(request):
 
     plan_number = MealPlan.objects.filter(user = request.user).count() + 1  
-    # objects = get_plan_objects(request)
-        
-    # if objects != -1:
-    #     recipes = objects[0]
-    #     ingredients = objects[1]
-    #     ctx = {
-    #         'recipes': recipes,
-    #         'ingredients': ingredients,
-    #         'plan_number': plan_number,
-    #         'meal_time_choices': MEALTIME_CHOICES,
-    #         'today': datetime.today().strftime('%Y-%m-%d')
-    #     }
-    # else: 
+    
     ctx = {
         'plan_number': plan_number,
         'meal_time_choices': MEALTIME_CHOICES,
@@ -1031,7 +1030,7 @@ def create_plan(request):
         # Check to make sure dates and number of days match
         start_date = datetime.strptime(start_date, '%Y-%m-%d')
         end_date = datetime.strptime(end_date, '%Y-%m-%d')
-        calculated_days = (end_date - start_date).days
+        calculated_days = (end_date - start_date).days + 1
         if calculated_days != int(days):
             messages.info(request, ("Calculated number of days does not match number of days entered."))
             return render(request, 'recipes/create_plan.html', ctx) 
@@ -1416,7 +1415,6 @@ def add_base_meals(request, plan_id):
     if meal == 'snack': plan.snack = add
     if meal == 'dessert': plan.dessert = add
     if meal == 'other': plan.other = add
-    print(plan.brunch)
     plan.save()
 
     # update each planned meal
@@ -1448,7 +1446,6 @@ def add_base_meals(request, plan_id):
                     meal_plan = plan,
                     user = request.user,
                 )
-            print(planned_meal.recipes.all(), planned_meal.ingredients.all(), planned_meal.notes)
             if planned_meal.recipes.all() or planned_meal.ingredients.all() or planned_meal.notes:
                 pass
             else:
@@ -1463,14 +1460,84 @@ def update_days(request, plan_id):
     data = json.loads(request.body)
     plan = MealPlan.objects.get(pk = plan_id)
 
-    startdate = data.get('startdate')
-    enddate = data.get('enddate')
+    startdate = datetime.strptime(data.get('startdate'), '%Y-%m-%d').date() 
+    enddate = datetime.strptime(data.get('enddate'), '%Y-%m-%d').date() 
 
-    if datetime.strptime(startdate, '%Y-%m-%d').date() != plan.start_date:
-        print('start', datetime.strptime(startdate, '%Y-%m-%d').date(), type(plan.start_date))
-    elif datetime.strptime(enddate, '%Y-%m-%d').date() != plan.end_date:
-        print('end', datetime.strptime(enddate, '%Y-%m-%d').date(), plan.end_date)
+    meals = {
+        'breakfast': plan.breakfast,
+        'brunch': plan.brunch,
+        'lunch': plan.lunch,
+        'dinner': plan.dinner,
+        'snack': plan.snack,
+        'dessert': plan.dessert,
+        'other': plan.other
+    }
+    
+    # add new days at the beginning, with appropriate meals, changing all future planned meals to day + delta
 
+    # find out how many days to add to beginning
+    start_delta = (plan.start_date - startdate).days
+    # days to add to end
+    end_delta = (enddate - plan.end_date).days
+
+    if start_delta != 0:
+        # for all planned meals, adjust day in plan
+        existing_meals = PlannedMeal.objects.filter(
+                    meal_plan = plan, 
+                    user = request.user
+                )
+        for existing_meal in existing_meals:
+            existing_meal.day = existing_meal.day + start_delta
+            existing_meal.save()
+    
+    if start_delta < 0 or end_delta < 0:
+        delta = max(abs(start_delta), abs(end_delta))
+        for day in range(abs(delta)):
+            new_day = day - 1
+            if end_delta < 0:
+                new_day = plan.days - day - 1
+            PlannedMeal.objects.filter(
+                meal_plan = plan, 
+                day = new_day,
+                user = request.user
+            ).delete()
+    elif start_delta > 0 or end_delta > 0:
+        delta = max(start_delta, end_delta)
+        for day in range(delta):
+            new_day = day
+            if end_delta > 0:
+                new_day = day + plan.days
+            for key in meals.keys():
+                if meals[key] and PlannedMeal.objects.filter(
+                        meal_plan = plan, 
+                        meal = key,
+                        day = new_day,
+                        user = request.user
+                    ).count() == 0:
+                    new_meal = PlannedMeal(
+                        meal_plan = plan, 
+                        meal = key,
+                        day = new_day,
+                        user = request.user
+                    )
+                    new_meal.save()
+    # elif end_delta < 0:
+    #     for day in range(abs(end_delta)):
+    #         PlannedMeal.objects.filter(
+    #             meal_plan = plan, 
+    #             day = plan.days - day,
+    #             user = request.user
+    #         ).delete()
+
+    # adjust plan's number of days and startdate
+    plan.start_date = startdate
+    plan.end_date = enddate
+    plan.days = (plan.end_date - plan.start_date).days + 1
+    plan.save()
+
+    ctx = get_display_edit_plan_ctx(request, plan.id)
+
+    return ajax(request, 'recipes/plan_days.html', ctx) 
 
 def plan_detail(request, plan_id):
     
@@ -1478,3 +1545,15 @@ def plan_detail(request, plan_id):
     ctx['display_only'] = True
 
     return render(request, 'recipes/plan_display.html', context = ctx)
+
+def delete_plan(request, plan_id):
+    plan = MealPlan.objects.get(pk = plan_id)
+    if plan:
+        if plan.user == request.user:
+            plan.delete()
+        else:
+            next_pg = request.GET.get('next')
+            messages.info(request, 'You cannot delete something that does not belong to you.')
+    else:
+        messages.info(request, 'Plan no longer exists')
+    return HttpResponseRedirect(reverse("recipes:planning"))    

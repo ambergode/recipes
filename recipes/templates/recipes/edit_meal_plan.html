@@ -6,6 +6,7 @@
 
 {% block main %}
     {% load recipe_extras %}
+    {% include 'recipes/delete_plan_button.html' %}
     <h1>Meal Plan</h1>
     <form name='edit_meal_plan' action='{% url "recipes:update_plan" plan.id %}' method='post'>
         {% csrf_token %}

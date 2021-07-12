@@ -1,3 +1,4 @@
+{% include 'recipes/delete_plan_button.html' %}
 <div class='float-right'>
     <form action='{% url "recipes:display_edit_plan" plan.id %}' method='post'>
         {% csrf_token %}

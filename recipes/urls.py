@@ -41,6 +41,7 @@ urlpatterns = [
     path('mealplanning/<int:plan_id>', views.plan_detail, name='plan_detail'),
     path('record_planned_meal/', views.record_planned_meal, name='record_planned_meal'),
     path('all_plans/', views.index_plans, name='index_plans'),
+    path('<int:plan_id>/delete_plan/', views.delete_plan, name='delete_plan'),
 
     path('button_ajax/', views.button_ajax, name="button_ajax"),
     path('cancel/', views.cancel, name='cancel'),

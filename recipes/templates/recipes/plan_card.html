@@ -1,5 +1,5 @@
-<a class="undecorated" href="{% url 'recipes:plan_detail' plan.id %}">
-    <div class="card w-100 m-1">
+<div class="card w-100 m-1">
+    <a class="undecorated" href="{% url 'recipes:plan_detail' plan.id %}">
         <div class="card-body">
             <div class="row">
                 <div class="col">
@@ -9,13 +9,13 @@
                     {{ plan.start_date }} - {{ plan.end_date }}
                 </div>
             </div>
-            <div class='row'>
-                <div class="col">
-                    <form action='{% url "recipes:display_edit_plan" plan.id %}' method='post'>
-                        <input type='submit' value='Edit' class='btn btn-secondary'>
-                    </form>
-                </div>
-            </div>
         </div>
+    </a>
+    <div class='card-footer'>
+        {% include 'recipes/delete_plan_button.html' %}
+        <form action='{% url "recipes:display_edit_plan" plan.id %}' method='post'>
+            {% csrf_token %}
+            <input type='submit' value='Edit' class='btn btn-secondary'>
+        </form>
     </div>
-</a>
+</div>

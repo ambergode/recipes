@@ -12,6 +12,13 @@
                 <div class='col'>
                     {% include 'recipes/plan_card.html' %}
                 </div>
+            {% empty %}
+                <div class='txt-align-c'>
+                    No current plan. 
+                    <a href='{% url "recipes:create_plan" %}'>
+                        Add one.
+                    </a>
+                </div>
             {% endfor %}
         </div>
     </div>

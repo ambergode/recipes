@@ -12,12 +12,10 @@
         {% endif %}
     </div>
 {% empty %}
-    <div class='added_recipe' id='no_recipe' style='background-color:#ffe8e8;'>
-        {% if display_only %}
+    {% if display_only %}
+        <div class='added_recipe' id='no_recipe' style='background-color:#ffe8e8;'>
             Going hungry!
             <a href='{% url "recipes:display_edit_plan" plan.id %}' class='undecorated'>Add something!</a>
-        {% else %}
-            Nothing yet! Add something.
-        {% endif %}
-    </div>
+        </div>
+    {% endif %}
 {% endfor %}

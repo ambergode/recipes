@@ -63,17 +63,11 @@
         </div>
     </div>
     <div class='row'>
-        <div class='col-sm-auto m-1'>
-            Meals to plan for: 
-        </div>
-        <div class='col m-1'>
-            {% if display_only %}
-                <ul>
-                    {% for meal in meals %}
-                        <li>{{ meal }}</li>
-                    {% endfor %}
-                </ul>
-            {% else %}
+        {% if not display_only %}
+            <div class='col-sm-auto m-1'>
+                Meals to plan for: 
+            </div>
+            <div class='col m-1'>
                 {% for meal_time_choice in meal_time_choices %}
                     <span class='p-1'>
                         {% if plan %} 
@@ -91,27 +85,30 @@
                         {% endif %}
                     </span>
                 {% endfor %}
-            {% endif %}
-        </div>
+            </div>
+        {% endif %}
     </div>
     <div class='row'>
-        <div class='col-sm-auto m-1'>
-            Notes:
-        </div>
-        <div class='col m-1'>
-            {% if display_only %}
-                {% if plan.notes %}
+        {% if display_only %}
+            {% if plan.notes %}
+                <div class='col-sm-auto m-1'>
+                    Notes:
+                </div>
+                <div class='col m-1'>
                     {{ plan.notes }}
-                {% else %}
-                    No notes
-                {% endif %}
-            {% else %}
+                </div>
+            {% endif %}
+        {% else %}
+            <div class='col-sm-auto m-1'>
+                Notes:
+            </div>
+            <div class='col m-1'>
                 {% if plan.notes %}
                     <input name='notes' type='text' value='{{ plan.notes }}' autocomplete="off" class='w-100'>
                 {% else %}
                     <input name='notes' type='text' placeholder='Additional notes' autocomplete="off" class='w-100'>
                 {% endif %}
-            {% endif %}
-        </div>
+            </div>
+        {% endif %}
     </div>
 </div>
