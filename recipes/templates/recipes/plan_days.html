@@ -1,4 +1,65 @@
-<div class="row row-cols-1 row-cols-sm-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-3">
+<div class="accordion" id="accordionExample">
+    <div class="accordion-item">
+      <h5 class="accordion-header" id="headingOne">
+        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+            Block Edit
+        </button>
+      </h5>
+      <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+        <div class="accordion-body">
+            <div class='row g-0 m-0 p-0'>
+                <div class='col'>
+                    <div class='row'>
+                        <div class='col-sm-auto my-auto'>
+                            Add
+                        </div>
+                        <div class='col g-0 m-0 p-0'>
+                            <div class='row p-0 m-auto'>
+                                <div class='col my-1 replaced_content_container'>
+                                    <input type='text' name='user-input' class='recipe-search' id='search_all' placeholder="search recipes" autocomplete="off" 
+                                        onkeyup='schedule_list_call_helper(this)' onclick='close_lists(); schedule_list_call_helper(this)'>
+                                    <div id='replaceable-content_all' class='replaced_content'></div>
+                                </div>
+                                <div class='row g-1 p-2' id='planned_food_all_'>
+                                    {% with meal.recipes.all as recipes %}
+                                        {% with meal.meal as meal %}
+                                            {% include 'recipes/plan_added_recipes.html' %}
+                                        {% endwith %}
+                                    {% endwith %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class='row'>
+                        <div class='col-sm-auto my-auto'>
+                            to
+                        </div>
+                        <div class='col-sm-auto mx-0'>
+                            <select id='frequency' class='p-2'>
+                                <option value='every'>every</option>
+                                <option value='every_even'>every even</option>
+                                <option value='every_odd'>every odd</option>
+                                <option value='empty'>empty</option>
+                            </select>
+                        </div>
+                        <div class='col mx-0'>
+                            <select id='bulk_meal' class='p-2'>
+                                {% for meal in meals %}
+                                    <option value='{{ meal }}'>{{ meal }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class='col-sm-auto'>
+                            <button class='btn btn-secondary p-2' onclick='bulk_add({{ plan.id }}); return false'>Add</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row row-cols-1 row-cols-sm-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-3">
     {% for day in days %}
         <div class="col">
             <div id='replaceable-content-{{ day.0|stringformat:"03d" }}'>

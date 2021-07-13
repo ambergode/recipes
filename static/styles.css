@@ -188,15 +188,27 @@ td {
 }
 
 .meal-plan-card {
-    border: solid #003773 3px;
+    border: solid lightgray 1px;
 }
+
+.block-edit-container {
+    padding:10px;
+    border-radius: 5px;
+}
+
+select, .recipe-search {
+    border: solid lightgray 1px;
+    border-radius: 5px;
+}
+
 .recipe-search {
     width: 100%;
     padding: .5em;
-    border: solid lightgray 1px;
-    border-radius: 5px 5px 0% 0%;
     outline:none;
+    margin: auto;
+    border-radius: 5px 5px 0% 0%;
 }
+
 .replaced_content_container {
     position: relative;
 }

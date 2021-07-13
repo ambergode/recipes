@@ -204,7 +204,7 @@ function set_button_listeners() {
 }
 
 
-function update_ingredients (evt, button_type, button_ingquant) {
+function update_ingredients(evt, button_type, button_ingquant) {
     
     if (button_type === 'rem') {
         evt.preventDefault()
@@ -441,7 +441,6 @@ function update_days() {
 
 
 function list_fetch_call(body, day_meal) {
-    
     const csrftoken = Cookies.get('csrftoken');
     fetch('list_recipes/', {
         method: 'POST',
@@ -468,7 +467,22 @@ function list_fetch_call(body, day_meal) {
 }
 
 
+function all_planned_meals_helper(day) {
+    let planned_meals = []
+    if (day === 'all') {
+        const planned_meal_divs = document.querySelectorAll('.planned_meals')
+        planned_meal_divs.forEach(pm => {
+            planned_meals.push(pm.id.slice(4))
+        })
+    }
+    return planned_meals
+}
+
+
 function record_plan_selection(day, meal, recipe_id) {
+
+    let planned_meals = all_planned_meals_helper(day)
+
     const csrftoken = Cookies.get('csrftoken');
     fetch('add_recipe/', {
         method: 'POST',
@@ -476,7 +490,8 @@ function record_plan_selection(day, meal, recipe_id) {
             day: day,
             meal: meal, 
             recipe_id: recipe_id,
-            add_or_remove: 'add'
+            add_or_remove: 'add',
+            planned_meals: planned_meals,
         }),
         headers: {
             "X-Requested-With": "XMLHttpRequest",
@@ -505,6 +520,9 @@ function close_lists() {
 
 
 function remove_food(day, meal, recipe_id) {
+
+    let planned_meals = all_planned_meals_helper(day)
+
     const csrftoken = Cookies.get('csrftoken');
     fetch('add_recipe/', {
         method: 'POST',
@@ -512,7 +530,8 @@ function remove_food(day, meal, recipe_id) {
             day: day,
             meal: meal,
             recipe_id: recipe_id,
-            add_or_remove: 'remove'
+            add_or_remove: 'remove',
+            planned_meals: planned_meals,
         }),
         headers: {
             "X-Requested-With": "XMLHttpRequest",
@@ -681,6 +700,35 @@ function confirm_delete(plan_id) {
 }
 
 
+function bulk_add(plan_id) {
+    const planned_meals = all_planned_meals_helper('all')
+    const frequency = document.querySelector('#frequency').value
+    const meal = document.querySelector('#bulk_meal').value
+    
+    const csrftoken = Cookies.get('csrftoken');
+    fetch('/recipes/' + plan_id + '/bulk_add', {
+        method: 'POST',
+        body: JSON.stringify({
+            planned_meals: planned_meals,
+            frequency: frequency,
+            meal: meal
+        }),
+        headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            'X-CSRFToken': csrftoken
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(response => {
+        let plan_container = $('#plan-container')
+        reload_partial_page(response['html_from_view'], plan_container, listeners = undefined)
+    })
+
+    return false
+}
+
+
 // global variable
 let scheduled_function = false
 
@@ -801,6 +849,7 @@ $(function(){ // this will be called when the DOM is ready
         ppl.addEventListener('change', update_ppl)
     }
 
+    
     if (window.location.pathname !== '/recipes/create_plan/') {
         const meals = document.querySelectorAll('.meal_time_choices')
         meals.forEach(meal => {

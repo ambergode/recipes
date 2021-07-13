@@ -2,12 +2,22 @@
     <div class='row added_recipe'>
         <div class='col'>
             <a href='{% url "recipes:detail" recipe.id %}' class='undecorated'>
-                <div class='' id='{{ day|stringformat:"03d" }}_{{ recipe.id|stringformat:"04d" }}_{{ meal }}'>{{ recipe }}</div>
+                {% ifequal day 'all' %}
+                    <div class='planned_meals' id='all_{{ recipe.id }}'>{{ recipe }}</div>
+                {% else %}
+                    <div id='{{ day|stringformat:"03d" }}_{{ recipe.id|stringformat:"04d" }}_{{ meal }}'>{{ recipe }}</div>
+                {% endifequal %}
             </a>
         </div>
         {% if not display_only %}
             <div class='col-sm-auto'>
-                <i class="fas fa-times delete" id='delete_{{ day|stringformat:"03d" }}_{{ recipe.id|stringformat:"04d" }}_{{ meal }}' onclick="remove_food('{{day}}', '{{meal}}', '{{recipe.id}}')"></i>
+                <i class="fas fa-times delete" 
+                {% ifequal day 'all' %}
+                    id='delete_all' onclick="remove_food('all', '', '{{recipe.id}}')"
+                {% else %}
+                    id='delete_{{ day|stringformat:"03d" }}_{{ recipe.id|stringformat:"04d" }}_{{ meal }}' onclick="remove_food('{{day}}', '{{meal}}', '{{recipe.id}}')"
+                {% endifequal %}
+                ></i>
             </div>
         {% endif %}
     </div>

@@ -7,7 +7,9 @@
 {% block main %}
     {% load recipe_extras %}
     {% include 'recipes/delete_plan_button.html' %}
-    <h1>Meal Plan</h1>
+    <div class='txt-align-c'>
+        <h1>Meal Plan</h1>
+    </div>
     <form name='edit_meal_plan' action='{% url "recipes:update_plan" plan.id %}' method='post'>
         {% csrf_token %}
         <div class='fixed-bottom'>
@@ -15,8 +17,8 @@
         </div>
         <input type='hidden' id='plan_id' value='{{ plan.id }}'>
         {% include 'recipes/plan_base_info.html' %}
-        <div class='m-2'></div>
-        <div id='plan-container' class='plan-container p-2 w-100'>
+        <div class='m-3'></div>
+        <div id='plan-container' class='plan-container m-2'>
             {% include 'recipes/plan_days.html' %}
         </div>
     </form>

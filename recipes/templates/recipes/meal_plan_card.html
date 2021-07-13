@@ -1,6 +1,6 @@
 {% load recipe_extras %}
 {% with day.1 as day_meals %}{% with day.2 as add_meals %}{% with day.0 as day %}
-<div class='card p-1 m-3 g-3 w-100 meal-plan-card' id='meal_plan_card_{{ day|stringformat:"03d" }}'>
+<div class='card p-0 m-auto g-2 w-100 meal-plan-card' id='meal_plan_card_{{ day|stringformat:"03d" }}'>
     <div class='card-header'>
         <div class='row'>
             <div class='col'>
@@ -64,7 +64,9 @@
                     {% if not display_only %}
                         <div class='row'>
                             <div class='col replaced_content_container'>
-                                <input type='text' name='user-input' class='recipe-search' id='search_{{ day|stringformat:"03d" }}_{{ meal.meal }}' placeholder="search recipes" autocomplete="off" onkeyup='schedule_list_call_helper(this)' onclick='close_lists(); schedule_list_call_helper(this)'>
+                                <input type='text' name='user-input' class='recipe-search' id='search_{{ day|stringformat:"03d" }}_{{ meal.meal }}' 
+                                    placeholder="search recipes" autocomplete="off" onkeyup='schedule_list_call_helper(this)' 
+                                    onclick='close_lists(); schedule_list_call_helper(this)'>
                                 <div id='replaceable-content_{{ day|stringformat:"03d" }}_{{ meal.meal }}' class='replaced_content'></div>
                             </div>
                         </div>

@@ -1168,43 +1168,61 @@ def get_display_edit_plan_ctx(request, plan_id):
 def plan_add_recipe(request, plan_id):
     plan = MealPlan.objects.get(pk = plan_id)
     data = json.loads(request.body)
-
     recipe_id = data.get("recipe_id").strip()
     recipe = Recipe.objects.get(pk = recipe_id)
     if recipe == None:
         return JsonResponse({'messages': 'Recipe not found.'})
 
-    day = int(data.get("day").strip())   
-    meal = data.get("meal").strip().lower()
+    day = data.get("day").strip()
+    if day == 'all':
+        planned_meals = []
+        pre_planned_meals = data.get('planned_meals')
+        for ppm in pre_planned_meals:
+            temp = Recipe.objects.get(pk = ppm)
+            planned_meals.append(temp)
+        
+        if data.get('add_or_remove') == 'add':
+            planned_meals.append(recipe)
+        else:
+            planned_meals.remove(recipe)
 
-    # try to get a planned meal
-    try: 
-        planned_meal = PlannedMeal.objects.get(user = request.user, meal_plan = plan, meal = meal, day = day)
+        return ajax(request, 'recipes/plan_added_recipes.html', {
+            'recipes': planned_meals,
+            'day': 'all',
+        })
 
-    except PlannedMeal.DoesNotExist:
-        print('creating new plan - caution - this should not happen yet')
-        # add a new meal if one does not exist yet
-        planned_meal = PlannedMeal(
-            user = request.user,
-            meal_plan = plan,
-            meal = meal,
-            day = day,
-        )
-        planned_meal.save()
-
-    if data.get('add_or_remove') == 'add':
-        # add the selected food to the planned meal
-        planned_meal.recipes.add(recipe)
     else:
-        # remove the selected recipe
-        planned_meal.recipes.remove(recipe)
+        day = int(data.get("day").strip())   
+        meal = data.get("meal").strip().lower()
 
-    # return html
-    return ajax(request, 'recipes/plan_added_recipes.html', {
-        'recipes': planned_meal.recipes.all(),
-        'day': day,
-        'meal': meal
-    })
+        # try to get a planned meal
+        try: 
+            planned_meal = PlannedMeal.objects.get(user = request.user, meal_plan = plan, meal = meal, day = day)
+
+        except PlannedMeal.DoesNotExist:
+            print('creating new plan - caution - this should not happen')
+            # add a new meal if one does not exist yet
+            planned_meal = PlannedMeal(
+                user = request.user,
+                meal_plan = plan,
+                meal = meal,
+                day = day,
+            )
+            planned_meal.save()
+
+        if data.get('add_or_remove') == 'add':
+            # add the selected food to the planned meal
+            planned_meal.recipes.add(recipe)
+        else:
+            # remove the selected recipe
+            planned_meal.recipes.remove(recipe)
+
+        # return html
+        return ajax(request, 'recipes/plan_added_recipes.html', {
+            'recipes': planned_meal.recipes.all(),
+            'day': day,
+            'meal': meal
+        })
 
 
 def list_recipes(request, plan_id):
@@ -1521,13 +1539,6 @@ def update_days(request, plan_id):
                         user = request.user
                     )
                     new_meal.save()
-    # elif end_delta < 0:
-    #     for day in range(abs(end_delta)):
-    #         PlannedMeal.objects.filter(
-    #             meal_plan = plan, 
-    #             day = plan.days - day,
-    #             user = request.user
-    #         ).delete()
 
     # adjust plan's number of days and startdate
     plan.start_date = startdate
@@ -1539,12 +1550,70 @@ def update_days(request, plan_id):
 
     return ajax(request, 'recipes/plan_days.html', ctx) 
 
+
 def plan_detail(request, plan_id):
     
     ctx = get_display_edit_plan_ctx(request, plan_id)
     ctx['display_only'] = True
 
     return render(request, 'recipes/plan_display.html', context = ctx)
+
+
+def bulk_add(request, plan_id):
+
+    data = json.loads(request.body)
+    plan = MealPlan.objects.get(pk = plan_id)
+
+    planned_recipes = data.get('planned_meals')
+    frequency = data.get('frequency')
+    meal = data.get('meal')
+
+    if frequency == 'empty':
+        for day in range(plan.days):
+            try:
+                planned_meal = PlannedMeal.objects.get(
+                    user = request.user,
+                    meal_plan = plan,
+                    meal = meal,
+                    day = day
+                )
+                print(planned_meal.recipes.all())
+                if not planned_meal.recipes.all():
+                    for pr in planned_recipes:
+                        planned_meal.recipes.add(
+                            Recipe.objects.get(pk = pr)
+                        )
+                        planned_meal.save()
+            except PlannedMeal.DoesNotExist:
+                print('meal does not exist', day, meal)
+    else:
+        # default is to add a recipe to every day
+        set_range = range(plan.days)
+        if frequency == 'every_even':
+            set_range = range(1, plan.days + 1, 2)
+        elif frequency == 'every_odd':
+            set_range = range(0, plan.days + 1, 2)
+
+        for day in set_range:
+            try:
+                planned_meal = PlannedMeal.objects.get(
+                    user = request.user,
+                    meal_plan = plan,
+                    meal = meal,
+                    day = day
+                )
+                for pr in planned_recipes:
+                    planned_meal.recipes.add(
+                        Recipe.objects.get(pk = pr)
+                    )
+                    planned_meal.save()
+            except PlannedMeal.DoesNotExist:
+                print('meal does not exist', day, meal)
+     
+
+    ctx = get_display_edit_plan_ctx(request, plan.id)
+    return ajax(request, 'recipes/plan_days.html', ctx) 
+
 
 def delete_plan(request, plan_id):
     plan = MealPlan.objects.get(pk = plan_id)
