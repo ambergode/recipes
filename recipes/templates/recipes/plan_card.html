@@ -12,10 +12,6 @@
         </div>
     </a>
     <div class='card-footer'>
-        {% include 'recipes/delete_plan_button.html' %}
-        <form action='{% url "recipes:display_edit_plan" plan.id %}' method='post'>
-            {% csrf_token %}
-            <input type='submit' value='Edit' class='btn btn-secondary'>
-        </form>
+        {% include 'recipes/fav_shop_plan_bar.html' %}
     </div>
 </div>

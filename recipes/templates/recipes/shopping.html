@@ -30,10 +30,10 @@
             </div>
         </div>
         <div class='row'>
-            <div id="replaceable-content" class='col'>
+            <div id="replaceable-content" class='col outlined'>
                 {% include 'recipes/current_shopping_list.html' %}
             </div>
-            <div class='col-md-3'>
+            <div class='col-md-4'>
                 {% for shopping_list in shopping_lists %}
                     {% include 'recipes/shopping_list_card.html' %}
                 {% endfor %}

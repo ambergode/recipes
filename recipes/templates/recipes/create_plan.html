@@ -1,31 +1,9 @@
-{% extends 'base.html' %}
 
-{% block title %} 
-    Meal Planning
-{% endblock %}
-
-{% block main %}
-    <h1>Meal Plan</h1>
-    <form name='meal_plan' action='{% url "recipes:create_plan" %}' method='post'>
-        {% csrf_token %}
-        <div class='fixed-bottom'>
-            <input type="submit" id="create_plan" value='Create Meal Plan' class='btn-sm btn-dark btn-block w-100'>  
-        </div>
-        {% include 'recipes/plan_base_info.html' %}
-    </form>
-    <!-- <hr>
-    {% include 'recipes/plan_add_recipes.html' %}
-    <div class='replaceable-content'>
+<h1>Meal Plan</h1>
+<form name='meal_plan' action='{% url "recipes:create_plan" %}' method='post'>
+    {% csrf_token %}
+    <div class='fixed-bottom'>
+        <input type="submit" id="create_plan" value='Create Meal Plan' class='btn-sm btn-dark btn-block w-100'>  
     </div>
-    <hr>
-    <div class='container'>
-        <h5>Selected Recipes:</h5>
-        <div class='row'>
-            {% for recipe in recipes %}
-                <div class='col-sm-4'>
-                    {% include 'recipes/recipe_card.html' %}
-                </div>
-            {% endfor %}
-        </div>
-    </div> -->
-{% endblock %}
+    {% include 'recipes/plan_base_info.html' %}
+</form>

@@ -5,7 +5,8 @@
     <div class='right-align'>
         <div class='row'>
             <div class='col g-1'>
-                <form id="shop_{{ recipe.id }}" name="shop" method="POST">
+                {% include 'recipes/shop_edit_buttons.html' %}
+                <!-- <form id="shop_{{ recipe.id }}" name="shop" method="POST">
                     {% csrf_token %}
                     {% get_status 'shop' 'shopping_list' recipe.id request as shop_status %}
                     {% if shop_status %}
@@ -27,7 +28,7 @@
                     {% csrf_token %}
                     <input type='hidden' name='next' value='{{request.GET.next}}'>
                     <input type='submit' name='cancel' value='Cancel' class='btn-sm btn-dark'>
-                </form>
+                </form> -->
             </div>
         </div>
     </div>

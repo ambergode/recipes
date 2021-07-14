@@ -11,10 +11,13 @@ function fetch_call() {
     const edit_found = curr_pathname.match(edit_regex);
     const list_regex = /\/recipes\/([0-9]+)\/update_shopping_list\//
     const list_found = curr_pathname.match(list_regex);
+    const model = document.querySelector('#model').value
 
     let path = '/recipes/'
     if (edit_found || list_found) {
         path = curr_pathname
+    } else if (model === 'mealplan') {
+        path = '/recipes/all_plans/'
     }
 
     const user_input = document.querySelector('#user-input').value
@@ -80,6 +83,13 @@ function reload_partial_page(html_from_view, reload_div, listeners = undefined) 
             }
         }
 
+        if (listeners && listeners.includes('days')) {
+            const days = document.querySelector('#days')
+            if (days) {
+                update_dates_days(days)
+            }
+        }
+
         return false;
     })
 }
@@ -109,6 +119,42 @@ function add_ingredient(evt) {
         const reload_div = $('#ingredients_list');
         reload_partial_page(response['html_from_view'], reload_div, listeners = ['edit_ing'])
     });
+}
+
+
+function update_create_form() {
+    const rbs = document.querySelectorAll("input[type='radio']")
+    let selected = undefined
+    rbs.forEach(rb => {
+        if (rb.checked) {
+            selected = rb.value
+        }
+    })
+    let template = 'recipes/create_recipe_or_list.html'
+    let model = 'list'
+    if (selected === 'mealplan') {
+        template = 'recipes/create_plan.html'
+        model = 'plan'
+    }
+
+    const csrftoken = Cookies.get('csrftoken')
+    fetch(window.location.pathname, {
+        method: 'POST',
+        body: JSON.stringify({
+            'template': template,
+            'model': model
+        }),
+        headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            'X-CSRFToken': csrftoken
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(response => {
+        const reload_div = $('#create_div')
+    reload_partial_page(response['html_from_view'], reload_div, 'days')
+    })   
 }
 
 
@@ -170,6 +216,35 @@ function record_button (evt, button_type, button_recipe, source) {
         }
     }); 
 };
+
+
+function clear_list() {
+
+    const csrftoken = Cookies.get('csrftoken')
+    fetch('/recipes/clear_list/', {
+        method: 'POST',
+        headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            'X-CSRFToken': csrftoken
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(response => {
+        const reload_div = $('#replaceable-content');
+        reload_partial_page(response['html_from_view'], reload_div)
+    });
+}
+
+
+function copy(model, inst_id) {
+    let new_form = document.createElement('form')
+    new_form.setAttribute('action', '/recipes/copy/' + model + '/' + inst_id)
+    new_form.setAttribute('method', 'get')
+    const node = document.querySelector('#copy_' + inst_id)
+    node.appendChild(new_form)
+    new_form.submit()
+}
 
 
 function set_button_listeners() {
@@ -375,7 +450,6 @@ function set_enddate(startdate, num_days) {
     // -1 to make enddate inclusive in plan
     enddate.setDate(enddate.getDate() + num_days - 1)
 
-    console.log(enddate, num_days)
     // write the new date into the html
     const enddate_div = document.querySelector('#enddate')
     let month = enddate.getMonth() + 1
@@ -412,7 +486,6 @@ function set_days() {
         swal({
             text: 'Please enter a date after the startdate.'
         })
-        console.log(days.value, 'c', days.value/(1000 * 60 * 60 * 24) + 1)
         set_enddate(startdate, parseInt(days.value))
     }
 }
@@ -729,6 +802,51 @@ function bulk_add(plan_id) {
 }
 
 
+function update_dates_days(days) {
+    let num_days = parseInt(days.value)
+    const startdate_div = document.querySelector('#startdate')
+    const startdate = new Date(startdate_div.value + ' 12:00:00')
+    const enddate_div = document.querySelector('#enddate')
+    let enddate = new Date(enddate_div.value + ' 12:00:00')
+    // when creating a plan, the enddate doesn't exist yet, 
+    // so the template loads it as the same as the startdate
+    if (startdate.toDateString() === enddate.toDateString()) {
+        set_enddate(startdate, num_days)
+    }
+
+    days.addEventListener('change', function() {
+        num_days = parseInt(this.value)
+        if (num_days > 14) {
+            swal({
+                text: 'It is not recommended to have plan that lasts more than 14 days.'
+            })
+            set_enddate(startdate, num_days)
+        } else if (num_days <= 0) {
+            swal({
+                text: 'Please enter a positve number of days.'
+            })
+        } else {
+            set_enddate(startdate, num_days)
+        }
+    })
+
+    enddate_div.addEventListener('change', () => {
+        set_days()
+        let plan_container = document.querySelector('#plan-container')
+        if (plan_container) {
+            update_days()
+        } 
+    })
+    startdate_div.addEventListener('change', () => {
+        set_days() 
+        let plan_container = document.querySelector('#plan-container')
+        if (plan_container) {
+            update_days()
+        } 
+    })
+}
+
+
 // global variable
 let scheduled_function = false
 
@@ -797,47 +915,7 @@ $(function(){ // this will be called when the DOM is ready
 
     const days = document.querySelector('#days')
     if (days) {
-        let num_days = parseInt(days.value)
-        const startdate_div = document.querySelector('#startdate')
-        const startdate = new Date(startdate_div.value + ' 12:00:00')
-        const enddate_div = document.querySelector('#enddate')
-        let enddate = new Date(enddate_div.value + ' 12:00:00')
-        // when creating a plan, the enddate doesn't exist yet, 
-        // so the template loads it as the same as the startdate
-        if (startdate.toDateString() === enddate.toDateString()) {
-            set_enddate(startdate, num_days)
-        }
-
-        days.addEventListener('change', function() {
-            num_days = parseInt(this.value)
-            if (num_days > 14) {
-                swal({
-                    text: 'It is not recommended to have plan that lasts more than 14 days.'
-                })
-                set_enddate(startdate, num_days)
-            } else if (num_days <= 0) {
-                swal({
-                    text: 'Please enter a positve number of days.'
-                })
-            } else {
-                set_enddate(startdate, num_days)
-            }
-        })
-    
-        enddate_div.addEventListener('change', () => {
-            set_days()
-            let plan_container = document.querySelector('#plan-container')
-            if (plan_container) {
-                update_days()
-            } 
-        })
-        startdate_div.addEventListener('change', () => {
-            set_days() 
-            let plan_container = document.querySelector('#plan-container')
-            if (plan_container) {
-                update_days()
-            } 
-        })
+        update_dates_days(days)
     }
 
     // listen for clicks outside of input and close lists

@@ -1,6 +1,11 @@
 {% load recipe_extras %}
 
-<h4 class='txt-align-c m-3'>Current Shopping List</h4>
+{% if not plan_shopping_list %}
+    <button class='btn-sm btn-danger float-right my-2' id='clear_current_list' onclick='clear_list()'>
+        Empty List
+    </button>
+    <h4 class='txt-align-c m-3'>Current Shopping List</h4>
+{% endif %}
 {% if shopping %}
     <ul class="invisible_bullet">
         {% for category in shopping %}

@@ -1,28 +1,18 @@
-<a class='undecorated'  href = "{% url 'recipes:detail_shopping_list' shopping_list.0.id %}">
-    <div class="card w-100 m-1">
+<div class="card w-100 m-1">
+    <a class='undecorated'  href = "{% url 'recipes:detail_shopping_list' shopping_list.0.id %}">
         <div class="card-body">
             <div class='row'>
                 <div class='col'>
                     <h5 class="card-title">{{ shopping_list.0.name|title }}</h5>
                     <h6 class="card-subtitle mb-2 text-muted">{{ shopping_list.0.description }}</h6>
                 </div>
-                <div class='col-sm-auto'>
-                    {% with shopping_list.0.id as list_id %}
-                        {% include 'recipes/shop_edit_buttons.html' %}
-                    {% endwith %}
-                </div>
             </div>
-            {% if shopping_list.1 %}
-                <div class='row'>
-                    <div class='col'>
-                        <ul class="card-text smaller">
-                            {% for item in shopping_list.1 %}
-                                <li>{{ item.quantity|floatformat }} {{ item.unit|lower }} {{ item.ingredient }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                </div>
-            {% endif %}
+            {% include 'recipes/shopping_list_list.html' %}
         </div>
+    </a>
+    <div class='card-footer'>
+        {% with shopping_list.0.id as list_id %}
+            {% include 'recipes/shop_edit_buttons.html' %}
+        {% endwith %}
     </div>
-</a>
+</div>

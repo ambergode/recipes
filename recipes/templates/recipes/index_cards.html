@@ -1,26 +1,36 @@
 <div class='card-group'>
     <div class="row">
-        {% if recipe_list %}
-            {% for recipe in recipe_list %}
-                <div class='col-md'>
-                    {% include 'recipes/recipe_card.html' %}
-                </div>
-            {% endfor %}
-        {% elif shopping_lists %}
-            {% for shopping_list in shopping_lists %}
-                <div class='col-sm'>
-                    {% include 'recipes/shopping_list_card.html' %}
-                </div>
-            {% endfor %}           
+        {% if page_obj %}
+            {% if recipe_list %}
+                {% for recipe in page_obj %}
+                    <div class='col-md'>
+                        {% include 'recipes/recipe_card.html' %}
+                    </div>
+                {% endfor %}
+            {% elif shopping_lists %}
+                {% for shopping_list in page_obj %}
+                    <div class='col-sm'>
+                        {% include 'recipes/shopping_list_card.html' %}
+                    </div>
+                {% endfor %}  
+            {% elif mealplan_list %}
+                {% for plan in page_obj %}
+                    <div class='col-sm'>
+                        {% include 'recipes/plan_card.html' %}
+                    </div>
+                {% endfor %}  
+            {% endif %}
         {% else %}
             <span>Nothing to see here!
                 {% if user.is_authenticated %}
-                    Would you like to <a href="{% url 'recipes:create_recipe' 'recipe' %}">add something new</a>?
+                    Would you like to <a href="{% url 'recipes:create_recipe' model %}">add something new</a>?
                 {% else %}
-                    Would you like to <a href="{% url 'login' %}?next={{request.path}}">log in</a> to see all of your lists and recipes?
+                    Would you like to <a href="{% url 'login' %}?next={{request.path}}">log in</a> to see all of your content?
                     Not a user yet? <a href="/register?next={{request.path}}">Register here!</a>
                 {% endif %}
             </span>
         {% endif %}
     </div>
 </div>
+<br>
+{% include 'recipes/page_nav.html' %}

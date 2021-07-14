@@ -1,9 +1,10 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _ 
-from .convert_units import convert_units
 from django.contrib.auth.models import User
 
 from tempt.settings import MEDIA_URL
+
+from .convert_units import convert_units
 
 
 VOLUME = ['ml', 'liter', 'tsp', 'tbsp', 'cup', 'floz', 'pint', 'quart', 'gallon']
@@ -206,7 +207,7 @@ class Recipe(CommonInfo):
 class Step(models.Model):
     step = models.CharField(max_length = 1024)
     order = models.IntegerField()
-    recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE)
+    recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE, related_name='steps')
 
     def __str__(self):
         return str(self.order + 1) + ". " + self.step
@@ -268,49 +269,6 @@ class Ingredient(models.Model):
     def __str__(self):
         return self.ingredient
 
-class IngQuant(models.Model):
-    ingredient = models.ForeignKey(Ingredient, on_delete = models.CASCADE, related_name = 'ingredients')
-    quantity = models.DecimalField(max_digits = 7, decimal_places = 2, default = 0)
-    recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE, null = True, blank = True, related_name = 'ingquants')
-    shopping_list = models.ForeignKey(ShoppingList, on_delete = models.CASCADE, null = True, blank = True, related_name = 'ingquants')
-
-    unit = models.CharField(
-        max_length = 13,
-        choices = UNIT_CHOICES,
-        default = "GRAM"
-    )
-
-    def unitDisplay(self):
-        return self.get_unit_display()
-
-    def __str__(self):
-        unit = self.unit.lower()
-        if self.quantity != 1 and unit != "":
-            unit += "s"
-        return str(self.ingredient) + " " + str(self.quantity) + " " + str(self.unit)
-
-class Favorites(models.Model):
-    recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE)
-    user = models.ForeignKey(User, on_delete = models.CASCADE, related_name = 'favorites')
-
-    def __str__(self):
-        return str(self.recipe)
-
-class Shop(models.Model):
-    recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE, null = True, blank = True)
-    user = models.ForeignKey(User, on_delete = models.CASCADE) 
-    shopping_list = models.ForeignKey(ShoppingList, on_delete = models.CASCADE, null = True, blank = True)
-
-    def __str__(self):
-        return str(self.recipe)
-
-class Plan(models.Model):
-    recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE, null = True, blank = True)
-    shopping_list = models.ForeignKey(ShoppingList, on_delete = models.CASCADE, null = True, blank = True)
-    user = models.ForeignKey(User, on_delete = models.CASCADE)
-
-    def __str__(self):
-        return str(self.recipe)
 
 class MealPlan(models.Model):
     name = models.CharField(max_length = 256)
@@ -335,6 +293,18 @@ class MealPlan(models.Model):
     def __str__(self):
         return self.name 
 
+    def get_recipe_amounts(self):
+        # make a dictionary: {recipe: servings}
+        recipe_list = {}
+        for pm in self.planned_meals.all():
+            for recipe in pm.recipes.all():
+                if recipe in recipe_list.keys():
+                    recipe_list[recipe] += pm.servings
+                else:
+                    recipe_list[recipe] = pm.servings         
+        return recipe_list
+    
+
 class PlannedMeal(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     meal_plan = models.ForeignKey(MealPlan, on_delete = models.CASCADE, related_name = 'planned_meals')
@@ -346,9 +316,62 @@ class PlannedMeal(models.Model):
     servings = models.IntegerField(default = '2')
     day = models.IntegerField()
     recipes = models.ManyToManyField(Recipe, blank = True)
-    ingredients = models.ManyToManyField(Ingredient, blank = True)
     notes = models.CharField(max_length = 226, null = True, blank = True)
 
     def __str__(self):
         return 'day ' + str(self.day) + ' ' + self.meal + ' for ' + str(self.meal_plan)
+
+
+
+class IngQuant(models.Model):
+    ingredient = models.ForeignKey(Ingredient, on_delete = models.CASCADE, related_name = 'ingredients')
+    quantity = models.DecimalField(max_digits = 7, decimal_places = 2, default = 0)
+    recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE, null = True, blank = True, related_name = 'ingquants')
+    shopping_list = models.ForeignKey(ShoppingList, on_delete = models.CASCADE, null = True, blank = True, related_name = 'ingquants')
+    meal_plan = models.ForeignKey(MealPlan, on_delete = models.CASCADE, null = True, blank = True, related_name = 'ingquants')
+
+    unit = models.CharField(
+        max_length = 13,
+        choices = UNIT_CHOICES,
+        default = "GRAM"
+    )
+
+    def unitDisplay(self):
+        return self.get_unit_display()
+
+    def __str__(self):
+        unit = self.unit.lower()
+        if self.quantity != 1 and unit != "":
+            unit += "s"
+        return str(self.ingredient) + " " + str(self.quantity) + " " + str(self.unit)
+
+
+class Favorites(models.Model):
+    recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE, null = True, blank = True)
+    mealplan = models.ForeignKey(MealPlan, on_delete = models.CASCADE, null = True, blank = True)
+    user = models.ForeignKey(User, on_delete = models.CASCADE, related_name = 'favorites')
+
+    def __str__(self):
+        if self.recipe:
+            return str(self.recipe)
+        else:
+            return str(self.mealplan)
+
+class Shop(models.Model):
+    recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE, null = True, blank = True)
+    user = models.ForeignKey(User, on_delete = models.CASCADE) 
+    shopping_list = models.ForeignKey(ShoppingList, on_delete = models.CASCADE, null = True, blank = True)
+    mealplan = models.ForeignKey(MealPlan, on_delete = models.CASCADE, null = True, blank = True)
+
+    def __str__(self):
+        return str(self.recipe)
+
+class Plan(models.Model):
+    recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE, null = True, blank = True)
+    shopping_list = models.ForeignKey(ShoppingList, on_delete = models.CASCADE, null = True, blank = True)
+    user = models.ForeignKey(User, on_delete = models.CASCADE)
+
+    def __str__(self):
+        return str(self.recipe)
+
 

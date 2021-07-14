@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block main %}
-<div class='greeting'>
+<div class='txt-align-c'>
     <h6>
         {% if user.is_authenticated %}
             {% if user.first_name %}
@@ -19,36 +19,39 @@
     </h6>
 </div>
 <div class='container'>
-<form action="{% url 'recipes:index' %}">
-    {% csrf_token %}
-    <input type='hidden' id='model' value='index'>
-    <div class='row'>
-        <div class='col-sm-auto'>
-            <i class="fas fa-search" id="search-icon"></i>
-        </div>
-        <div class='col'>
-            <input class="search_bar p-1 w-100" type="text" name="q" id="user-input" autofocus placeholder="search by name" autocomplete="off">
-        </div>
-    </div>
-    {% if user.is_authenticated %}
-        {% if recipe_list %}
-            <div class='row smaller'>
-                <div class='col'>
-                </div>
-                <div class='col-sm-auto'>
-                    <input type="radio" id="all" name="group" value="all">
-                    <label for="all">All</label>
-                    <input type="radio" id="favorites" name="group" value="favorites">
-                    <label for="favorites">Favorites</label>
-                    <input type="radio" id="mine" name="group" value="mine" checked>
-                    <label for="mine">My Recipies</label>
-                    <input type="radio" id="public" name="group" value="public">
-                    <label for="public">Public</label>
-                </div>
+    <form action="{% url 'recipes:index' %}">
+        {% csrf_token %}
+        <!-- <input type='hidden' id='model' value='index'> -->
+        <input type='hidden' id='model' value='{{ model }}'>
+        <div class='row'>
+            <div class='col-sm-auto'>
+                <i class="fas fa-search" id="search-icon"></i>
             </div>
+            <div class='col'>
+                <input class="search_bar p-1 w-100" type="text" name="q" id="user-input" autofocus placeholder="search by name" autocomplete="off">
+            </div>
+        </div>
+        {% if user.is_authenticated %}
+            {% if recipe_list or mealplan_list %}
+                <div class='row smaller'>
+                    <div class='col'>
+                    </div>
+                    <div class='col-sm-auto'>
+                        <input type="radio" id="all" name="group" value="all" {% if mealplan_list %}checked{% endif %}>
+                        <label for="all">All</label>
+                        <input type="radio" id="favorites" name="group" value="favorites">
+                        <label for="favorites">Favorites</label>
+                        {% if recipe_list %}
+                            <input type="radio" id="mine" name="group" value="mine" checked>
+                            <label for="mine">My Recipies</label>
+                            <input type="radio" id="public" name="group" value="public">
+                            <label for="public">Public</label>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
         {% endif %}
-    {% endif %}
-</form>
+    </form>
 </div>
 
 

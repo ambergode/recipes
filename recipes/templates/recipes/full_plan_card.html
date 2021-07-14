@@ -1,11 +1,10 @@
-{% include 'recipes/delete_plan_button.html' %}
-<div class='float-right'>
-    <form action='{% url "recipes:display_edit_plan" plan.id %}' method='post'>
-        {% csrf_token %}
-        <input type='submit' value='Edit' class='btn btn-secondary'>
-    </form>
+<div class='container'>
+    {% include 'recipes/fav_shop_plan_bar.html' %}
 </div>
-<h1>{{ plan.name }}</h1>
+<br><br>
+<a href='{% url "recipes:plan_detail" plan.id %}' class='undecorated'>
+    <h1>{{ plan.name }}</h1>
+</a>
 {% include 'recipes/plan_base_info.html' %}
 <div class='m-2'></div>
 <div class='plan-container p-2 w-100'>
@@ -18,4 +17,17 @@
             </div>
         {% endfor %}
     </div>
+</div>
+<div class='container m-2'>
+    <h6>Total servings</h6>
+    <ul>
+        {% for recipe in recipes %}
+            <li>{{ recipe.1 }} servings of {{ recipe.0|title }}</li>
+        {% empty %}
+            <li>No meals yet! Go add something!</li>
+        {% endfor %}    
+    </ul>
+    
+    <h6>Shopping</h6>
+    {% include 'recipes/current_shopping_list.html' %}
 </div>

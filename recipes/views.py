@@ -17,7 +17,17 @@ from .models import VOLUME, WEIGHT, UNIT, UNIT_CHOICES, MEAL_CHOICES, MEALTIME_C
 from .convert_units import convert_units, get_smaller_unit
 from .forms import MealForm, UnitForm, CategoryForm, RecipePhotoForm
 
-# Utility functions
+######## UTILITY FUNCTIONS ##########
+
+def modify_servings(recipe, servings):
+    original_servings = recipe.servings
+    multiplier = servings/original_servings
+    new_ingquants = {}
+    for ingquant in recipe.ingquants.all():
+        new_ingquants[ingquant.ingredient] = (round(float(ingquant.quantity) * multiplier, 2), ingquant.unit)
+    
+    return new_ingquants
+
 
 def normalize(data):
     return data.strip().lower()
@@ -94,9 +104,12 @@ def button_ajax(request):
         model = data.get('model')
         if model == 'shopping_list':
             model_update = ShoppingList
+        elif model == 'mealplan':
+            model_update = MealPlan
         else:
             model_update = Recipe
         recipe_id = data.get('recipe_id')
+        print(model)
         recipe = model_update.objects.get(pk = recipe_id)
         action = data.get('tag')
         action_dict = {
@@ -110,6 +123,8 @@ def button_ajax(request):
         
         if model_update == ShoppingList:
             match = model.objects.filter(shopping_list = recipe, user = user)
+        elif model_update == MealPlan:
+            match = model.objects.filter(mealplan = recipe, user = user)
         else:
             match = model.objects.filter(recipe = recipe, user = user)
 
@@ -117,6 +132,8 @@ def button_ajax(request):
             inst = model()
             if model_update == ShoppingList:
                 inst.shopping_list = recipe
+            elif model_update == MealPlan:
+                inst.mealplan = recipe
             else:
                 inst.recipe = recipe
             inst.user = user
@@ -142,13 +159,94 @@ def button_ajax(request):
         return HttpResponse("Something went wrong recording your button click on " + action)
 
 
-# Page views
+def copy(request, model_name, inst_id):
+    # initialize variables
+    ctx = {}
+    url = ''
+    planned_meals = None
+    ingquants = None
+    steps = None
+
+    if model_name == 'plan':
+        model = MealPlan
+        element = MealPlan.objects.get(pk = inst_id)
+        url = 'recipes:display_edit_plan'
+        kwarg = 'plan_id'
+        planned_meals = list(element.planned_meals.all())
+    elif model_name == 'recipe':
+        model = Recipe
+        element = Recipe.objects.get(pk = inst_id)
+        url = 'recipes:display_edit_recipe'
+        kwarg = 'recipe_id'
+        ingquants = list(element.ingquants.all())
+        steps = list(element.steps.all())
+    elif model_name == 'shopping_list':
+        model = ShoppingList
+        element = ShoppingList.objects.get(pk = inst_id)
+        url = 'recipes:update_shopping_list'
+        kwarg = 'recipe_id'
+        ingquants = list(element.ingquants.all())
+
+    # rename the copy
+    copy_count = model.objects.filter(name = 'COPY OF ' + element.name, user = request.user).count()
+    if copy_count > 0:
+        while model.objects.filter(
+            name = 'COPY OF ' + element.name + ' (' + str(copy_count + 1) + ')', 
+            user = request.user).exists():
+            copy_count += 1
+        element.name = 'COPY OF ' + element.name + ' (' + str(copy_count + 1) + ')'
+    else:
+        element.name = 'COPY OF ' + element.name
+    
+    # removing the pk creates a new instance
+    element.pk = None
+    element.save()
+    
+    if planned_meals:
+        # copy and reattach all planned meals
+        for pm in planned_meals:
+            recipes = pm.recipes.all()
+            pm.pk = None
+            pm.save()
+            pm.meal_plan = element
+            for recipe in recipes:
+                pm.recipes.add(recipe.id)
+            pm.save()
+        save_ingquants(element)
+    
+    if ingquants:
+        # copy and reattach all ingquants        
+        for ingquant in ingquants:
+            ingquant.pk = None
+            ingquant.save()
+            if model_name == 'recipe':
+                ingquant.recipe = element
+            else:
+               ingquant.shopping_list = element 
+            ingquant.save()
+    
+    if steps:
+        # copy and reattach all steps
+        for step in steps:
+            step.pk = None
+            step.save()
+            step.recipe = element
+            step.save()
+
+    return HttpResponseRedirect(reverse(url, kwargs={kwarg: element.id,}))
+    
+
+
+
+
+########## RECIPES ########
 
 def index(request, model_name='recipe'):
-    
     # choose the model
     if model_name == "shopping_list":
         model = ShoppingList
+    elif model_name == 'mealplan':
+        model = MealPlan
     else:
         model = Recipe
 
@@ -173,14 +271,22 @@ def index(request, model_name='recipe'):
         if q_filter == 'mine':
             recipe_list = model.objects.filter(user = user).order_by('-name')
         elif q_filter == 'all':
-            recipe_list = model.objects.filter(Q(user = user) | Q(public = True)).order_by('-name')
+            if model == MealPlan:
+                recipe_list = model.objects.filter(Q(user = user)).order_by('-name')
+            else:
+                recipe_list = model.objects.filter(Q(user = user) | Q(public = True)).order_by('-name')
         elif q_filter == 'public':
             recipe_list = model.objects.filter(public = True).order_by('-name')
         elif q_filter == 'favorites':
-            favorites = Favorites.objects.filter(user = user)
             pks = []
-            for favorite in favorites:
-                pks.append(favorite.recipe.id)
+            if model == Recipe:
+                favorites = Favorites.objects.filter(user = user, recipe__isnull=False)
+                for favorite in favorites:
+                    pks.append(favorite.recipe.id)
+            elif model == MealPlan:
+                favorites = Favorites.objects.filter(user = user, mealplan__isnull=False)
+                for favorite in favorites:
+                    pks.append(favorite.mealplan.id)
             recipe_list = model.objects.filter(pk__in = pks)
 
     if data.get("q") != None:
@@ -188,11 +294,26 @@ def index(request, model_name='recipe'):
 
     ctx = {}
 
+    paginator = Paginator(recipe_list, 10)
     if model_name == 'shopping_list':
         ctx['shopping_lists'] = query_shopping_lists(request)
+        ctx['model'] = 'list'
+        paginator = Paginator(query_shopping_lists(request), 10)
+    elif model_name == 'mealplan':
+        ctx['mealplan_list'] = recipe_list
+        ctx['model'] = 'mealplan'
     else:
         ctx['recipe_list'] = recipe_list
+        ctx['model'] = 'recipe'
     
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    ctx.update({
+        'page_obj': page_obj
+    })
+    print(ctx['page_obj'])
+
+
     if request.is_ajax():
         return ajax(request, 'recipes/index_cards.html', ctx)
 
@@ -281,6 +402,7 @@ def detail(request, recipe_id):
             'nutrition': nutrition,
             'uncounted': uncounted,
             'unverified': unverified,
+            'model': 'recipe'
         }
 
         return render(request, 'recipes/detail.html', ctx)
@@ -289,6 +411,19 @@ def detail(request, recipe_id):
 @login_required
 def create(request, creation):
     if request.method == "POST":
+        if request.is_ajax():
+            data = json.loads(request.body)
+            template = data['template']
+
+            ctx = {'model': data['model']}
+            if data['model'] == 'plan':
+                ctx.update(create_plan_context(request))
+    
+            return ajax(request, template, ctx)
+
+        if request.POST.get('model') == 'mealplan':
+            return create_plan(request)
+
         new_recipe = request.POST.get("recipe_name")
         if request.POST.get('model') == 'recipe':
             model = Recipe
@@ -316,7 +451,10 @@ def create(request, creation):
         else: 
             return HttpResponseRedirect(reverse("recipes:update_shopping_list", kwargs= { "recipe_id": add_recipe.id, }))
     else:
-        return render(request, 'recipes/create_recipe.html', {'model': creation})
+        ctx = {'model': creation}
+        if creation == 'mealplan':
+            ctx.update(create_plan_context(request))
+        return render(request, 'recipes/create_recipe.html', ctx)
 
 
 @login_required
@@ -465,70 +603,56 @@ def add_ingredient(request, ingredient_id = None, source = 'recipe'):
         return HttpResponseRedirect(reverse("recipes:display_edit_recipe", args=(recipe_id,)))
 
 
-def get_shopping_context(request):
-    def shopping_helper(ingquant, check_ings, list_ingredients):
-        ''' 
-        Takes an ingquant, a list of ingquants to compare to, 
-        and a dictionary of ingredients with key - name of ingredient and value of the ingquants with that ingredient name
-        returns the updated dictionary
-        '''
 
-        # base case
-        check_ings_names = []
-        for ing in check_ings:
-            check_ings_names.append(ing.ingredient.ingredient)
+######## SHOPPING #######
 
-        if str(ingquant.ingredient) not in check_ings_names:
-            list_ingredients[str(ingquant.ingredient)].append(ingquant)
-        else:
-            ing = check_ings[0]
-            smaller = get_smaller_unit(ing.unit, ingquant.unit)
+def compile_ing_dict(ingquant, check_ings, list_ingredients):
+    ''' 
+    Takes an ingquant, a list of ingquants to compare to, 
+    and a dictionary of ingredients with key - name of ingredient and value of the ingquants with that ingredient name
+    returns the updated dictionary
+    '''
 
-            if smaller == ing.unit.lower():
-                convert_quantity = convert_units(ing.quantity, ing.unit, ingquant.unit)
-                new_ingquant = IngQuant()
-                new_ingquant.quantity = round(float(ingquant.quantity) + float(convert_quantity), 2) 
-                new_ingquant.unit = ingquant.unit
-                
-            elif smaller == ingquant.unit.lower():
-                convert_quantity = convert_units(ingquant.quantity, ingquant.unit, ing.unit)
-                new_ingquant = IngQuant()
-                new_ingquant.quantity = round(float(ing.quantity) + convert_quantity, 2)
-                new_ingquant.unit = ing.unit
+    # base case
+    check_ings_names = []
+    for ing in check_ings:
+        check_ings_names.append(ing.ingredient.ingredient)
+
+    if str(ingquant.ingredient) not in check_ings_names:
+        list_ingredients[str(ingquant.ingredient)].append(ingquant)
+    else:
+        ing = check_ings[0]
+        smaller = get_smaller_unit(ing.unit, ingquant.unit)
+
+        if smaller == ing.unit.lower():
+            convert_quantity = convert_units(ing.quantity, ing.unit, ingquant.unit)
+            new_ingquant = IngQuant()
+            new_ingquant.quantity = round(float(ingquant.quantity) + float(convert_quantity), 2) 
+            new_ingquant.unit = ingquant.unit
             
-            if smaller == -1 or convert_quantity == -1:
-                # cannot compare
-                # remove current ing
-                check_ings.remove(check_ings[0])
-                # recurse
-                return shopping_helper(ingquant, check_ings, list_ingredients)
-            
-            else:
-                # save new ingquant and return list
-                new_ingquant.ingredient = ingquant.ingredient
-                list_ingredients[str(ing.ingredient)].remove(ing)
-                list_ingredients[str(ing.ingredient)].append(new_ingquant)
-                new_ingquant.save()
-                return list_ingredients
-
-    list_ingredients = {}
-    user = request.user
-    for shop in Shop.objects.filter(user = user):
-        if shop.recipe:
-            recipe = shop.recipe
-            query = recipe.get_ingquants()
-        else:
-            shopping_list = shop.shopping_list
-            query = shopping_list.get_ingquants()
+        elif smaller == ingquant.unit.lower():
+            convert_quantity = convert_units(ingquant.quantity, ingquant.unit, ing.unit)
+            new_ingquant = IngQuant()
+            new_ingquant.quantity = round(float(ing.quantity) + convert_quantity, 2)
+            new_ingquant.unit = ing.unit
         
-        for ingquant in query:
-            if str(ingquant.ingredient) in list_ingredients.keys():
-                # for however many ingquants with the same ingredient
-                copy = list_ingredients[str(ingquant.ingredient)].copy
-                shopping_helper(ingquant, copy(), list_ingredients)
-            else:
-                list_ingredients[str(ingquant.ingredient)] = [ingquant]
+        if smaller == -1 or convert_quantity == -1:
+            # cannot compare
+            # remove current ing
+            check_ings.remove(check_ings[0])
+            # recurse
+            return compile_ing_dict(ingquant, check_ings, list_ingredients)
+        
+        else:
+            # save new ingquant and return list
+            new_ingquant.ingredient = ingquant.ingredient
+            list_ingredients[str(ing.ingredient)].remove(ing)
+            list_ingredients[str(ing.ingredient)].append(new_ingquant)
+            new_ingquant.save()
+            return list_ingredients
 
+
+def get_shopping(list_ingredients):
     # take the list of ingredients and turn them into a dictionary of the form
     # category name: ingquants
     shopping = {}         
@@ -547,11 +671,43 @@ def get_shopping_context(request):
                 for value in additional_values:
                     shopping[category].append(value)
 
+    return shopping
+
+
+def get_shopping_context(request):
+
+    list_ingredients = {}
+    user = request.user
+    for shop in Shop.objects.filter(user = user):
+        if shop.recipe:
+            recipe = shop.recipe
+            query = recipe.get_ingquants()
+        elif shop.mealplan:
+            recipe_list = shop.mealplan.get_recipe_amounts()
+            # turn the dictionary into a dictionary of ingredient and quantity
+            list_ingredients = {}
+            query = shop.mealplan.ingquants.all()
+           
+        else:
+            shopping_list = shop.shopping_list
+            query = shopping_list.get_ingquants()
+        
+        for ingquant in query:
+            if str(ingquant.ingredient) in list_ingredients.keys():
+                # for however many ingquants with the same ingredient
+                copy = list_ingredients[str(ingquant.ingredient)].copy
+                compile_ing_dict(ingquant, copy(), list_ingredients)
+            else:
+                list_ingredients[str(ingquant.ingredient)] = [ingquant]
+        
+    shopping = get_shopping(list_ingredients)
+
     context = {
         "shopping": shopping, 
         'shopping_lists': query_shopping_lists(request),
         'user_id': request.user.id,
     }
+
     return context
 
 
@@ -688,11 +844,15 @@ def display_edit(request, object_id, model_name):
     ctx = {  
         'unit_choices': UNIT_CHOICES,
         'category_choices': CATEGORY_CHOICES,
-        'model': model_name
+        'model': model_name,
+        'edit': True,
     }
     
-    if model_name == 'shopping_list':
+    if model_name == 'plan':
+        return display_edit_plan(request, object_id)
+    elif model_name == 'shopping_list':
         model = ShoppingList
+        ctx['list_id'] = object_id
     else:
         model = Recipe
 
@@ -941,6 +1101,13 @@ def index_shopping_lists(request):
     return index(request, model_name = 'shopping_list')
 
 
+def clear_list(request):
+    Shop.objects.filter(user = request.user).delete()
+    ctx = get_shopping_context(request)
+    return ajax(request, 'recipes/current_shopping_list.html', ctx)
+
+###### PLANNING #######
+
 def get_plan_objects(request):
     elements = Plan.objects.filter(user = request.user)
     recipes = []
@@ -960,13 +1127,31 @@ def get_plan_objects(request):
     return (recipes, ingredients)
 
 
+def get_plan_shopping_list(plan):
+    ctx = {'plan_shopping_list': True,}
+    recipe_amounts = plan.get_recipe_amounts()
+    recipes = []
+    for amt in recipe_amounts:
+        recipes.append((amt, recipe_amounts[amt]))
+    ctx['recipes'] = recipes
+
+    list_ingredients = {}
+    for ingquant in plan.ingquants.all():
+        if str(ingquant.ingredient) in list_ingredients.keys():
+            # for however many ingquants with the same ingredient
+            copy = list_ingredients[str(ingquant.ingredient)].copy()
+            compile_ing_dict(ingquant, copy, list_ingredients)
+        else:
+            list_ingredients[str(ingquant.ingredient)] = [ingquant]
+
+    shopping = get_shopping(list_ingredients)
+    ctx['shopping'] = shopping
+
+    return ctx
+
+
 @login_required
 def planning(request):
-    plans = MealPlan.objects.filter(user = request.user)
-
-    paginator = Paginator(plans, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
 
     today = datetime.today()
     active_plans = MealPlan.objects.filter(start_date__lte=today, end_date__gte=today)
@@ -978,31 +1163,47 @@ def planning(request):
         except MealPlan.DoesNotExist:
             current_plan = None
 
+    plans = MealPlan.objects.filter(user = request.user)
+    plans = plans.exclude(pk = current_plan.id)
+
+    paginator = Paginator(plans, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     ctx = {}
     if current_plan:
         days = range(current_plan.days)
         ctx = get_display_edit_plan_ctx(request, current_plan.id)
+        
+        ctx.update(get_plan_shopping_list(current_plan))
+
     ctx.update({
         'current_plan': current_plan,
         'display_only': True,
         'page_obj': page_obj,
+        'model': 'mealplan'
     })
+
     return render(request, 'recipes/mealplanning.html', context = ctx)
 
 
-@login_required
-def create_plan(request):
-
+def create_plan_context(request):
     plan_number = MealPlan.objects.filter(user = request.user).count() + 1  
     
     ctx = {
         'plan_number': plan_number,
         'meal_time_choices': MEALTIME_CHOICES,
-        'today': datetime.now().strftime('%Y-%m-%d')
+        'today': datetime.now().strftime('%Y-%m-%d'),
+        'model': 'mealplan',
     }
+    return ctx
+
+
+@login_required
+def create_plan(request):
+    ctx = create_plan_context(request)
         
     if request.method == 'POST':
-        
         name = request.POST.get('name') 
         people = request.POST.get('people')
         start_date = request.POST.get('startdate')
@@ -1153,7 +1354,8 @@ def get_display_edit_plan_ctx(request, plan_id):
         'meal_time_choices': MEALTIME_CHOICES,
         # 'add_meals': add_meals,
         'planned_meals': planned_meals,
-        'days': days
+        'days': days,
+        'model': 'mealplan'
     }
 
     # get the recipes and ingredients lined up for the plan
@@ -1200,7 +1402,7 @@ def plan_add_recipe(request, plan_id):
             planned_meal = PlannedMeal.objects.get(user = request.user, meal_plan = plan, meal = meal, day = day)
 
         except PlannedMeal.DoesNotExist:
-            print('creating new plan - caution - this should not happen')
+            print('creating new meal - caution - this should not happen')
             # add a new meal if one does not exist yet
             planned_meal = PlannedMeal(
                 user = request.user,
@@ -1303,8 +1505,12 @@ def record_planned_meal(request):
 
 @login_required
 def index_plans(request):
-    plans = MealPlan.objects.filter(user = request.user)
-    return render(request, 'recipes/plan_index.html', {'plans': plans})
+    return index(request, model_name = 'mealplan')
+    # plans = MealPlan.objects.filter(user = request.user)
+    # return render(request, 'recipes/plan_index.html', {
+    #     'plans': plans,
+    #     'model': 'mealplan'
+    #     })
 
 
 def save_plan(request, plan_id):
@@ -1327,6 +1533,8 @@ def save_plan(request, plan_id):
             pm.notes = notes
         pm.save()
 
+    save_ingquants(plan)
+
     # record the notes about this plan
     notes = request.POST.get('notes')
     if notes:
@@ -1341,10 +1549,32 @@ def save_plan(request, plan_id):
     return 
 
 
+def save_ingquants(plan):
+    # clear out old ingquants for plan shopping list
+    pre_existing_ingquants = plan.ingquants.all()
+    pre_existing_ingquants.delete()
+
+    # reestablish ingquants
+    recipe_list = plan.get_recipe_amounts()
+    for recipe in recipe_list:
+        recipe_ingquants = modify_servings(recipe, recipe_list[recipe])
+        for ing in recipe_ingquants:
+            new_ingquant = IngQuant(
+                ingredient = ing,
+                quantity = recipe_ingquants[ing][0],
+                unit = recipe_ingquants[ing][1],
+                meal_plan = plan
+            )   
+            new_ingquant.save()
+    return
+
+
 def update_and_edit_plan(request, plan_id):
     save_plan(request, plan_id)
 
-    return HttpResponseRedirect(reverse("recipes:display_edit_plan", kwargs= {"plan_id": plan_id,}))
+    return HttpResponseRedirect(reverse("recipes:display_edit_plan", kwargs= {
+        "plan_id": plan_id, 
+        }))
 
 
 @login_required
@@ -1464,7 +1694,7 @@ def add_base_meals(request, plan_id):
                     meal_plan = plan,
                     user = request.user,
                 )
-            if planned_meal.recipes.all() or planned_meal.ingredients.all() or planned_meal.notes:
+            if planned_meal.recipes.all() or planned_meal.notes:
                 pass
             else:
                 planned_meal.delete()             
@@ -1555,6 +1785,7 @@ def plan_detail(request, plan_id):
     
     ctx = get_display_edit_plan_ctx(request, plan_id)
     ctx['display_only'] = True
+    ctx.update(get_plan_shopping_list(MealPlan.objects.get(pk = plan_id)))
 
     return render(request, 'recipes/plan_display.html', context = ctx)
 

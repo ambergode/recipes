@@ -9,17 +9,27 @@
     <div class='d-flex justify-content-center'>
         <form action = "{% url 'recipes:create_recipe' model %}" method="post">
             {% csrf_token %}
-            <div>
-                What would you like to create?
-                <input type="radio" id="model_recipe" name="model" value="recipe" {% ifequal model 'recipe' %}checked{% endifequal %}>
-                <label for="model_recipe">Recipe</label>
-                <input type="radio" id="model_shopping_list" name="model" value="shopping_list" {% ifequal model 'shopping' %}checked{% endifequal %}>
-                <label for="recipe">Shopping List</label>
+            <div class='txt-align-c m-4'>
+                <h5>
+                    Create:
+                    <input type="radio" id="model_recipe" name="model" value="recipe" 
+                        {% ifequal model 'recipe' %}checked{% endifequal %} onchange='update_create_form()'>
+                    <label for="model_recipe">Recipe</label>
+                    <input type="radio" id="model_shopping_list" name="model" value="shopping_list" 
+                        {% ifequal model 'shopping' %}checked{% endifequal %} onchange='update_create_form()'>
+                    <label for="recipe">Shopping List</label>
+                    <input type="radio" id="model_mealplan" name="model" value="mealplan" 
+                        {% ifequal model 'mealplan' %}checked{% endifequal %} onchange='update_create_form()'>
+                    <label for="recipe">MealPlan</label>
+                </h5>
             </div>
             <br>
-            <div>
-                <input type="text" value="{{ recipe.name }}" autocomplete="off" name = "recipe_name">
-                <input type="submit" value="Create!">
+            <div id='create_div' class='txt-align-c'>
+                {% ifequal model 'mealplan' %}
+                    {% include 'recipes/create_plan.html' %}
+                {% else %}
+                    {% include 'recipes/create_recipe_or_list.html' %}
+                {% endifequal %}
             </div>
         </form>
     </div>

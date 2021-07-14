@@ -1,14 +1,10 @@
 {% load recipe_extras %}
-<div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
-    <form name="edit_list" action="{% url 'recipes:update_shopping_list' list_id %}?next={{request.path}}" method="post">
-        {% csrf_token %}
-        <input type='submit' value="Edit" class="btn-sm btn-light">
-    </form> 
+<div class="btn-group right-align" role="group" aria-label="Shopping List Actions">
     <form id="shop_{{ list_id }}" name="shop" method="POST">
         {% csrf_token %}
         {% get_status 'shop' 'shopping_list' list_id request as shop_status %}
         {% if shop_status %}
-            <button type="submit" name='sub_shop_{{ list_id }}' id='sub_shop_{{ list_id }}' class="btn shop">
+            <button type="submit" name='sub_shop_{{ list_id }}' id='sub_shop_{{ list_id }}' class="btn shop m-1">
                 <i class="fas fa-store" title='Remove from Shopping List' style="color:#006300"></i>
             </button>
         {% else %}
@@ -17,4 +13,24 @@
             </button>
         {% endif %}
     </form>
+    {% if edit %}
+        <form action="{% url 'recipes:cancel' %}" method='post'>
+            {% csrf_token %}
+            <input type='hidden' name='next' value='{{request.GET.next}}'>
+            <input type='submit' name='cancel' value='Cancel' class='btn-sm btn-dark m-1'>
+        </form>
+        <form id='delete_recipe_form' action="{% url 'recipes:delete_list' recipe_id %}" method='post'>
+            {% csrf_token %}
+            <input type='hidden' name='delete_model' id='model' value='shopping_list'>
+            <input type='submit' name='delete_list' id="delete_recipe" value='Delete List' class='btn-sm btn-danger m-1'>
+        </form>
+    {% else %}
+        <form name="edit_list" action="{% url 'recipes:update_shopping_list' list_id %}?next={{request.path}}" method="post">
+            {% csrf_token %}
+            <input type='submit' value="Edit" class="btn-sm btn-secondary m-1">
+        </form> 
+    {% endif %}
+    <button name='copy_list' id='copy_{{ list_id }}' onclick='copy("shopping_list", {{ list_id }})' class='btn-sm btn-warning m-1'>
+        Copy
+    </button>
 </div>

@@ -1,0 +1,11 @@
+{% if shopping_list.1 %}
+    <div class='row'>
+        <div class='col'>
+            <ul class="card-text smaller">
+                {% for item in shopping_list.1 %}
+                    <li>{{ item.quantity|floatformat }} {{ item.unit|lower }} {{ item.ingredient }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+{% endif %}

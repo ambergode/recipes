@@ -1,33 +1,90 @@
 {% load recipe_extras %}
 {{ request.user.id|json_script:"user_id" }}
-<div class="btn-group" role="group" aria-label="Shopping list, planning list, and favorite icons">
-    <form id="shop_{{ recipe.id }}" name="shop" method="POST">
-        {% csrf_token %}
-        {% get_status 'shop' 'recipe' recipe.id request as shop_status %}
-        {% if shop_status %}
-            <button type="submit" name='sub_shop_{{ recipe.id }}' id='sub_shop_{{ recipe.id }}' class="btn shop"><i class="fas fa-store" title='Remove from Shopping List' style="color:#006300"></i></i></button>
-        {% else %}
-            <button type="submit" name='sub_shop_{{ recipe.id }}' id='sub_shop_{{ recipe.id }}' class="btn shop"><i class="fas fa-store-slash" title='Add to Shopping List' style="color:grey"></i></button>
-        {% endif %}
-    </form>
+    <input type='hidden' id='model' value='{{ model }}'>
+    {% ifequal model 'mealplan' %}
+        {% with plan.id as item_id %}
+            <div class="btn-group right-align" role="group" aria-label="Recipe Actions">
+                <form id="shop_{{ item_id }}" dataset-model="{{ model }}" name="shop" method="POST">
+                    {% csrf_token %}
+                    {% get_status 'shop' model item_id request as shop_status %}
+                    {% if shop_status %}
+                        <button type="submit" name='sub_shop_{{ item_id }}' id='sub_shop_{{ item_id }}' class="btn shop m-0 p-0 g-0"><i class="fas fa-store" title='Remove from Shopping List' style="color:#006300"></i></i></button>
+                    {% else %}
+                        <button type="submit" name='sub_shop_{{ item_id }}' id='sub_shop_{{ item_id }}' class="btn shop m-0 p-0 g-0"><i class="fas fa-store-slash" title='Add to Shopping List' style="color:grey"></i></button>
+                    {% endif %}
+                </form>
 
-    <form id="plan_{{ recipe.id }}" name="plan" method="POST">
-        {% csrf_token %}
-        {% get_status 'plan' 'recipe' recipe.id request as plan_status %}
-        {% if plan_status %}
-            <button type="submit" name='sub_plan_{{ recipe.id }}' id='sub_plan_{{ recipe.id }}' class="btn plan"><i class="far fa-calendar-check" title='Remove from Meal Planning' style="color:#006300"></i></button>
-        {% else %}
-            <button type="submit" name='sub_plan_{{ recipe.id }}' id='sub_plan_{{ recipe.id }}' class="btn plan"><i class="far fa-calendar-times" title='Add to Meal Planning' style="color:grey"></i></button>
-        {% endif %}
-    </form>
+                <form id="favt_{{ item_id }}" dataset-model="{{ model }}" name="favorite" method="POST">
+                    {% csrf_token %}
+                    {% get_status 'fav' model item_id request as fav_status %}
+                    {% if fav_status %}
+                        <button type="submit" name='sub_fav_{{ item_id }}' id='sub_fav_{{ item_id }}' class="btn favorite m-0 p-0 g-0"><i class="fas fa-heart" title='Remove from Favorites' style="color:#ab0000"></i></button>
+                    {% else %}
+                        <button type="submit" name='sub_fav_{{ item_id }}' id='sub_fav_{{ item_id }}' class="btn favorite m-0 p-0 g-0"><i class="far fa-heart" title='Add to Favorites' style="color:grey"></i></button>
+                    {% endif %}
+                </form>
+                <button name='copy_plan' id='copy_{{ plan.id }}' onclick='copy("plan", {{ plan.id }})' class='btn-sm btn-warning mx-1'>
+                    Copy
+                </button>
+                <button name='delete_plan' id="delete_plan_{{ plan.id }}" onclick="confirm_delete({{ plan.id }})" class='btn-sm btn-danger mx-1'>  
+                    Delete
+                </button>
+                <form action='{% url "recipes:display_edit_plan" plan.id %}' method='post' class='g-0 m-0 p-0'>
+                    {% csrf_token %}
+                    <input type='submit' value='Edit' class='btn btn-secondary mx-1'>
+                </form>
+            </div>
+        {% endwith %}
+    {% endifequal %}
+    {% ifequal model 'recipe' %}
+        {% with recipe.id as item_id %}
+            <div class="btn-group right-align" role="group" aria-label="MealPlan Actions">
+                {% if edit %}
+                    <div class='col-sm-auto g-1'>
+                        <form action="{% url 'recipes:cancel' %}" method='post'>
+                            {% csrf_token %}
+                            <input type='hidden' name='next' value='{{request.GET.next}}'>
+                            <input type='submit' name='cancel' value='Cancel' class='btn-sm btn-dark p-2 m-1'>
+                        </form>
+                    </div>
+                    {% if user_owner %}
+                        <div class='col-sm-auto g-1'>
+                            <form action="{% url 'recipes:delete_recipe' recipe_id %}" method='post' id='delete_recipe_form'>
+                                {% csrf_token %}
+                                <input type='submit' name='delete_recipe' id="delete_recipe" value='Delete Recipe' class='btn-sm btn-danger  p-2 m-1'>
+                            </form>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <form name="edit_recipe" action="{% url 'recipes:display_edit_recipe' recipe.id %}?next={{request.path}}" method="post">
+                        {% csrf_token %}
+                        <input type='submit' value="Edit" class="btn-sm btn-light p-2 m-1">
+                    </form>
+                {% endif %}
 
-    <form id="favt_{{ recipe.id }}" name="favorite" method="POST">
-        {% csrf_token %}
-        {% get_status 'fav' 'recipe' recipe.id request as fav_status %}
-        {% if fav_status %}
-            <button type="submit" name='sub_fav_{{ recipe.id }}' id='sub_fav_{{ recipe.id }}' class="btn favorite"><i class="fas fa-heart" title='Remove from Favorites' style="color:#ab0000"></i></button>
-        {% else %}
-            <button type="submit" name='sub_fav_{{ recipe.id }}' id='sub_fav_{{ recipe.id }}' class="btn favorite"><i class="far fa-heart" title='Add to Favorites' style="color:grey"></i></button>
-        {% endif %}
-    </form>
-</div>
+                <button name='copy_recipe' id='copy_{{ recipe.id }}' onclick='copy("recipe", {{ recipe.id }})' class='btn-sm btn-warning py-2 m-1'>
+                    Copy
+                </button>
+
+                <form id="shop_{{ item_id }}" dataset-model="{{ model }}" name="shop" method="POST">
+                    {% csrf_token %}
+                    {% get_status 'shop' model item_id request as shop_status %}
+                    {% if shop_status %}
+                        <button type="submit" name='sub_shop_{{ item_id }}' id='sub_shop_{{ item_id }}' class="btn shop"><i class="fas fa-store" title='Remove from Shopping List' style="color:#006300"></i></i></button>
+                    {% else %}
+                        <button type="submit" name='sub_shop_{{ item_id }}' id='sub_shop_{{ item_id }}' class="btn shop"><i class="fas fa-store-slash" title='Add to Shopping List' style="color:grey"></i></button>
+                    {% endif %}
+                </form>
+
+                <form id="favt_{{ item_id }}" dataset-model="{{ model }}" name="favorite" method="POST">
+                    {% csrf_token %}
+                    {% get_status 'fav' model item_id request as fav_status %}
+                    {% if fav_status %}
+                        <button type="submit" name='sub_fav_{{ item_id }}' id='sub_fav_{{ item_id }}' class="btn favorite"><i class="fas fa-heart" title='Remove from Favorites' style="color:#ab0000"></i></button>
+                    {% else %}
+                        <button type="submit" name='sub_fav_{{ item_id }}' id='sub_fav_{{ item_id }}' class="btn favorite"><i class="far fa-heart" title='Add to Favorites' style="color:grey"></i></button>
+                    {% endif %}
+                </form>    
+            </div>
+        {% endwith %}
+    {% endifequal %}

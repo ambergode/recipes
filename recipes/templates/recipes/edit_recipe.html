@@ -6,46 +6,26 @@
 
 {% block main %}
 {% load static %}
-    <div class='row'>
-        <div class='col'>
-            <div class="alert alert-info alert-dismissible fade show w-75" role="alert">
-                {% if user_owner %}
-                    {% if recipe.personalized %}
-                        Here is your copy of this recipe for your editing pleasure!
+    <div class='container'>
+        <div class='row row-cols-1 row-cols-md-2'>
+            <div class='col'>
+                <div class="alert alert-info alert-dismissible fade show w-75" role="alert">
+                    {% if user_owner %}
+                        {% if recipe.personalized %}
+                            Here is your copy of this recipe for your editing pleasure!
+                        {% else %}
+                            You are editing the original recipe. If your recipe is public, other users can see your edits.
+                        {% endif %}
                     {% else %}
-                        You are editing the original recipe. If your recipe is public, other users can see your edits.
+                        You are making a private copy of this recipe and editing it.
                     {% endif %}
-                {% else %}
-                    You are making a private copy of this recipe and editing it.
-                {% endif %}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div> 
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div> 
+            </div>
+            <div class='col-sm-auto'>
+                {% include 'recipes/fav_shop_plan_bar.html' %}
+            </div>  
         </div>
-        <div class='col-sm-auto'>
-            <div class='row'>
-                {% if user_owner %}
-                    <div class='col-sm-auto g-1'>
-                        <form action="{% url 'recipes:delete_recipe' recipe_id %}" method='post' id='delete_recipe_form'>
-                            {% csrf_token %}
-                            <input type='submit' name='delete_recipe' id="delete_recipe" value='Delete Recipe' class='btn-sm btn-danger'>
-                        </form>
-                    </div>
-                {% endif %}
-                <div class='col-sm-auto g-1'>
-                    <form action="{% url 'recipes:cancel' %}" method='post'>
-                        {% csrf_token %}
-                        <input type='hidden' name='next' value='{{request.GET.next}}'>
-                        <input type='submit' name='cancel' value='Cancel' class='btn-sm btn-dark'>
-                    </form>
-                </div>
-            </div>
-            <div class='row'>
-                <div class='col'></div>
-                <div class='col-sm-auto'>
-                    {% include 'recipes/fav_shop_plan_bar.html' %}
-                </div>
-            </div>
-        </div>  
     </div>
     
     <div class='container'> 
@@ -56,56 +36,54 @@
                 <div class='fixed-bottom'>
                     <input type="submit" id="edit_recipe" value="Update Recipe" class='btn-sm btn-dark btn-block w-100'>  
                 </div>
-                <div class='row'>
-                    <div class='col title'>
-                        <input type="text" name="name" autocomplete='off' value='{{ recipe.name|title }}'>
+                <div class='title'>
+                        <input type="text" name="name" autocomplete='off' value='{{ recipe.name|title }}' class='w-100'>
                         {% if recipe.personalized %}
                             <i class="fas fa-user-edit"></i>
                         {% endif %}
-                    </div>
-                </div>
-                <div class='float-right'>
-                    <div class='row'>
-                        {{ photo_form }}
-                    </div>
-                    <div class='row mx-auto'>
-                    {% if recipe.photo %}
-                        <img class="recipe_image img-fluid img-thumbnail" src="{{ recipe.photo.url }}" alt="recipe photo">
-                    {% endif %}
-                    </div>
-                </div>
-                <div class='row g-0'>
-                    <div class='col-sm-auto'>
-                        {{ meal_form.as_p }}
-                    </div>
-                    <div class='col-sm-auto'>
-                        <strong>Public?</strong>
-                        {% if user_owner %}
-                            {% if not recipe.personalized %}
-                                <input type='checkbox' name='public' {% if recipe.public %} checked {% endif %}>
+                </div>            
+                <div class='row row-cols-1 row-cols-md-2 g-0'>
+                    <div class='col'>
+                        <p>
+                            {{ meal_form.as_p }}
+                        </p>
+                        <p>Author:
+                            {% if recipe.author %}
+                                <input type='text' class='form-control' name='author' autocomplete="off" value='{{ recipe.author|capfirst }}'>
+                            {% else %}
+                                <input type='text' class='form-control' name='author' autocomplete="off" placeholder='Who wrote this recipe?'>
+                            {% endif %}
+                        </p>
+                        <p>
+                            <strong>Public?</strong>
+                            {% if user_owner %}
+                                {% if not recipe.personalized %}
+                                    <input type='checkbox' name='public' {% if recipe.public %} checked {% endif %}>
+                                {% else %}
+                                    Recipes can only be shared by their original poster
+                                {% endif %}
                             {% else %}
                                 Recipes can only be shared by their original poster
                             {% endif %}
-                        {% else %}
-                            Recipes can only be shared by their original poster
-                        {% endif %}
+                        </p>
+                        <p>Description: 
+                            {% if recipe.description %}
+                                <input type="text" class="form-control" name="description" value="{{ recipe.description|capfirst }}" autocomplete="off">
+                            {% else %}
+                                <input type="text" class="form-control" name="description" placeholder="A short description" autocomplete="off">
+                            {% endif %}
+                        </p>
                     </div>
-                </div>
-                <div class='row g-0'>
-                    <p>Author:
-                        {% if recipe.author %}
-                            <input type='text' class='form-control' name='author' autocomplete="off" value='{{ recipe.author|capfirst }}'>
-                        {% else %}
-                            <input type='text' class='form-control' name='author' autocomplete="off" placeholder='Who wrote this recipe?'>
+                    <div class='col'>
+                        <div class='row'>
+                            {{ photo_form }}
+                        </div>
+                        <div class='row mx-auto'>
+                        {% if recipe.photo %}
+                            <img class="recipe_image img-fluid img-thumbnail" src="{{ recipe.photo.url }}" alt="recipe photo">
                         {% endif %}
-                    </p>
-                    <p>Description: 
-                        {% if recipe.description %}
-                            <input type="text" class="form-control" name="description" value="{{ recipe.description|capfirst }}" autocomplete="off">
-                        {% else %}
-                            <input type="text" class="form-control" name="description" placeholder="A short description" autocomplete="off">
-                        {% endif %}
-                    </p>
+                        </div>
+                    </div>
                 </div>
                 <div class='row g-0'>
                     <div class='col'>

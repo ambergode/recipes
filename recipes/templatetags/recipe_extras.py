@@ -12,6 +12,8 @@ def get_status(tag, model, recipe_id, request):
         current_user = request.user
         if model == 'recipe':
             model = Recipe
+        elif model == 'mealplan':
+            model = MealPlan
         else:
             model = ShoppingList
         recipe = model.objects.get(pk = recipe_id)
@@ -25,6 +27,11 @@ def get_status(tag, model, recipe_id, request):
         action = action_dict[tag]
         if model == Recipe:
             if action.objects.filter(recipe = recipe, user = current_user).count() > 0:
+                return True
+            else:
+                return False
+        elif model == MealPlan:
+            if action.objects.filter(mealplan = recipe, user = current_user).count() > 0:
                 return True
             else:
                 return False

@@ -26,6 +26,7 @@ urlpatterns = [
     path('<int:recipe_id>/shopping_list/', views.detail_shopping_list, name='detail_shopping_list'),
     path('all_shopping_lists/', views.index_shopping_lists, name='index_shopping_lists'),
     path('<int:recipe_id>/delete_list/', views.delete_list, name="delete_list"),
+    path('clear_list/', views.clear_list, name='clear_list'),
     
     path('mealplanning/', views.planning, name="planning"),
     path('create_plan/', views.create_plan, name='create_plan'),
@@ -46,4 +47,5 @@ urlpatterns = [
 
     path('button_ajax/', views.button_ajax, name="button_ajax"),
     path('cancel/', views.cancel, name='cancel'),
+    path('copy/<str:model_name>/<int:inst_id>/', views.copy, name='copy'),
 ]
