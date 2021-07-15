@@ -47,10 +47,15 @@
         <b>Cook:</b> {% if recipe.cook_time %}{{ recipe.cook_time }} min{{ recipe.cook_time|pluralize }}{% else %} -- min{% endif %}
         <b>Total:</b> {{ total }} min{{ total|pluralize }}
         <br>
-        <b>Servings:</b> {{ recipe.servings }} serving{{ recipe.servings|pluralize }}
+        <b>Original Recipe:</b> {{ recipe.servings }} serving{{ recipe.servings|pluralize }}
+        <br>
+        <b>Showing:</b>
+        {% include 'recipes/current_servings.html' %}
     </p>
     <hr>
-    {% include 'recipes/display_ingredient_list.html' %}  
+    <div id='replaceable-content'>
+        {% include 'recipes/display_ingredient_list.html' %}  
+    </div>
     {% if steps %}
         <hr>
         <div class="step_list">
@@ -156,7 +161,6 @@
                 </ul>
             </div>
         </div>
-    </div>
     {% endif %}
 {% endblock %}
 

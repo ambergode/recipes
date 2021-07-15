@@ -56,35 +56,39 @@
                         </div>
                     {% endif %}
                 {% else %}
-                    <form name="edit_recipe" action="{% url 'recipes:display_edit_recipe' recipe.id %}?next={{request.path}}" method="post">
-                        {% csrf_token %}
-                        <input type='submit' value="Edit" class="btn-sm btn-light p-2 m-1">
-                    </form>
+                    {% if user.is_authenticated %}
+                        <form name="edit_recipe" action="{% url 'recipes:display_edit_recipe' recipe.id %}?next={{request.path}}" method="post">
+                            {% csrf_token %}
+                            <input type='submit' value="Edit" class="btn-sm btn-light p-2 m-1">
+                        </form>
+                    {% endif %}
                 {% endif %}
 
-                <button name='copy_recipe' id='copy_{{ recipe.id }}' onclick='copy("recipe", {{ recipe.id }})' class='btn-sm btn-warning py-2 m-1'>
-                    Copy
-                </button>
+                {% if user.is_authenticated %}
+                    <button name='copy_recipe' id='copy_{{ recipe.id }}' onclick='copy("recipe", {{ recipe.id }})' class='btn-sm btn-warning py-2 m-1'>
+                        Copy
+                    </button>
 
-                <form id="shop_{{ item_id }}" dataset-model="{{ model }}" name="shop" method="POST">
-                    {% csrf_token %}
-                    {% get_status 'shop' model item_id request as shop_status %}
-                    {% if shop_status %}
-                        <button type="submit" name='sub_shop_{{ item_id }}' id='sub_shop_{{ item_id }}' class="btn shop"><i class="fas fa-store" title='Remove from Shopping List' style="color:#006300"></i></i></button>
-                    {% else %}
-                        <button type="submit" name='sub_shop_{{ item_id }}' id='sub_shop_{{ item_id }}' class="btn shop"><i class="fas fa-store-slash" title='Add to Shopping List' style="color:grey"></i></button>
-                    {% endif %}
-                </form>
+                    <form id="shop_{{ item_id }}" dataset-model="{{ model }}" name="shop" method="POST">
+                        {% csrf_token %}
+                        {% get_status 'shop' model item_id request as shop_status %}
+                        {% if shop_status %}
+                            <button type="submit" name='sub_shop_{{ item_id }}' id='sub_shop_{{ item_id }}' class="btn shop"><i class="fas fa-store" title='Remove from Shopping List' style="color:#006300"></i></i></button>
+                        {% else %}
+                            <button type="submit" name='sub_shop_{{ item_id }}' id='sub_shop_{{ item_id }}' class="btn shop"><i class="fas fa-store-slash" title='Add to Shopping List' style="color:grey"></i></button>
+                        {% endif %}
+                    </form>
 
-                <form id="favt_{{ item_id }}" dataset-model="{{ model }}" name="favorite" method="POST">
-                    {% csrf_token %}
-                    {% get_status 'fav' model item_id request as fav_status %}
-                    {% if fav_status %}
-                        <button type="submit" name='sub_fav_{{ item_id }}' id='sub_fav_{{ item_id }}' class="btn favorite"><i class="fas fa-heart" title='Remove from Favorites' style="color:#ab0000"></i></button>
-                    {% else %}
-                        <button type="submit" name='sub_fav_{{ item_id }}' id='sub_fav_{{ item_id }}' class="btn favorite"><i class="far fa-heart" title='Add to Favorites' style="color:grey"></i></button>
-                    {% endif %}
-                </form>    
+                    <form id="favt_{{ item_id }}" dataset-model="{{ model }}" name="favorite" method="POST">
+                        {% csrf_token %}
+                        {% get_status 'fav' model item_id request as fav_status %}
+                        {% if fav_status %}
+                            <button type="submit" name='sub_fav_{{ item_id }}' id='sub_fav_{{ item_id }}' class="btn favorite"><i class="fas fa-heart" title='Remove from Favorites' style="color:#ab0000"></i></button>
+                        {% else %}
+                            <button type="submit" name='sub_fav_{{ item_id }}' id='sub_fav_{{ item_id }}' class="btn favorite"><i class="far fa-heart" title='Add to Favorites' style="color:grey"></i></button>
+                        {% endif %}
+                    </form>    
+                {% endif %}
             </div>
         {% endwith %}
     {% endifequal %}

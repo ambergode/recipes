@@ -1,12 +1,50 @@
 {% load recipe_extras %}
 
 {% if not plan_shopping_list %}
-    <button class='btn-sm btn-danger float-right my-2' id='clear_current_list' onclick='clear_list()'>
+    <button class='btn-sm btn-danger float-right my-3 mx-2' id='clear_current_list' onclick='clear_list()'>
         Empty List
     </button>
     <h4 class='txt-align-c m-3'>Current Shopping List</h4>
 {% endif %}
 {% if shopping %}
+    {% if contents %}
+    <div class="accordion" id="accordionExample">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingOne">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                Summary
+                </button>
+            </h2>
+            <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+                <div class="accordion-body">
+                    <ul>
+                        {% for object in contents %}
+                            <li>
+                                {% if object.servings %}
+                                    {% with object as recipe %}
+                                        {% include 'recipes/current_servings.html' %} of
+                                    {% endwith %}
+                                    <a href='{% url "recipes:detail" object.id %}' class='undecorated'>
+                                        {{ object|title }}
+                                    </a>
+                                {% elif object.days %}
+                                    <a href='{% url "recipes:plan_detail" object.id %}' class='undecorated'>
+                                        {{ object|title }}
+                                    </a>
+                                {% else %}
+                                    <a href='{% url "recipes:detail_shopping_list" object.id %}' class='undecorated'>
+                                        {{ object|title }}
+                                    </a>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br>
+    {% endif %}
     <ul class="invisible_bullet">
         {% for category in shopping %}
             <li>

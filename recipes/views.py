@@ -159,6 +159,7 @@ def button_ajax(request):
         return HttpResponse("Something went wrong recording your button click on " + action)
 
 
+@login_required
 def copy(request, model_name, inst_id):
     # initialize variables
     ctx = {}
@@ -235,6 +236,73 @@ def copy(request, model_name, inst_id):
 
     return HttpResponseRedirect(reverse(url, kwargs={kwarg: element.id,}))
     
+@login_required
+def delete(request, model, recipe_id, ingredient_id = None):
+    
+    if model == ShoppingList:
+        destination = "recipes:shopping" 
+        error_destination = "recipes:update_shopping_list"
+    else:
+        destination = "recipes:index"
+        error_destination = "recipes:display_edit_recipe"
+    
+    recipe = model.objects.get(pk = recipe_id)
+    delete_object = recipe
+    
+    if ingredient_id != None:
+        model = Ingredient
+        destination = 'send to error dest'
+        delete_object = model.objects.get(pk = ingredient_id)
+    requesting_user = request.user
+
+    if delete_object.user.id == requesting_user.id:
+        delete_object.delete()
+        if destination != 'send to error dest':
+            return HttpResponseRedirect(reverse(destination))
+        else:
+            return HttpResponseRedirect(reverse(error_destination, args=(recipe_id,)))
+    else:
+        messages.info(request, 'You cannot delete something that does not belong to you.')
+        return HttpResponseRedirect(reverse(error_destination, args=(recipe_id,)))
+
+
+def cancel(request):
+    valuenext = request.POST.get('next')
+    return HttpResponseRedirect(valuenext)
+
+
+def update_servings(request):
+    data = json.loads(request.body)
+    servings = data['new_servings']
+    source = data['source']
+    recipe_id = data['recipe_id']
+
+    try:
+        if float(servings) > 0:
+            recipe = Recipe.objects.get(pk = recipe_id)
+            multiplier = float(servings) / float(recipe.servings)
+            recipe.servings = servings
+            recipe.save()
+
+            for ingquant in recipe.ingquants.all():
+                ingquant.quantity = float(ingquant.quantity) * multiplier
+                ingquant.save()
+        
+        else:  
+            messages.info(request, f"Recipe servings must be a positive number.")
+    except ValueError:
+        messages.info(request, f"Recipe servings must be a positive number.")
+
+    if source == '/recipes/shoppinglist/':
+        template = 'recipes/current_shopping_list.html'
+        ctx = get_shopping_context(request)
+    else:
+        template = 'recipes/display_ingredient_list.html'
+        ctx = get_detail_ctx(request, recipe_id)
+
+
+
+    return ajax(request, template, ctx)
 
 
 
@@ -250,6 +318,8 @@ def index(request, model_name='recipe'):
     else:
         model = Recipe
 
+    data = {}
+
     # set the recipe_list to render
     if not request.user.is_authenticated:
         recipe_list = model.objects.filter(public = True).order_by('-name')
@@ -261,8 +331,6 @@ def index(request, model_name='recipe'):
         # parse data if this is a fetch request
         if request.is_ajax():
             data = json.loads(request.body)
-        else:
-            data = {}
 
         q_filter = data.get('radio')
         # basic list already has 'mine' filter
@@ -321,6 +389,13 @@ def index(request, model_name='recipe'):
 
 
 def detail(request, recipe_id):
+    if request.method == "POST":
+        return HttpResponseRedirect(reverse("recipes:detail", kwargs= {"recipe_id": recipe_id,}))
+    else:
+        return render(request, 'recipes/detail.html', get_detail_ctx(request, recipe_id))
+
+
+def get_detail_ctx(request, recipe_id):
 
     def record_nutrient_value(nutrient, ingredient, in_grams, nutrition):
         # nutrient values stored in database as g or mg per 100g
@@ -336,76 +411,72 @@ def detail(request, recipe_id):
                 unverified.append(ingquant.ingredient)
         return value
 
-    if request.method == "POST":
-        return HttpResponseRedirect(reverse("recipes:detail", kwargs= {"recipe_id": recipe_id,}))
-    else:
-        recipe = get_object_or_404(Recipe, pk = recipe_id)
+    recipe = get_object_or_404(Recipe, pk = recipe_id)
 
-        nutrition = {
-            'calories': 0,
-            'fat': 0,
-            'satfats': 0,
-            'transfats': 0, 
-            'monounsatfats': 0,
-            'polyunsatfats': 0, 
-            'cholesterol': 0, 
-            'sodium': 0,
-            'carbs': 0,
-            'fiber': 0,
-            'sugar': 0,
-            'protein': 0,
-        }
-        uncounted = []
-        unverified = []
+    nutrition = {
+        'calories': 0,
+        'fat': 0,
+        'satfats': 0,
+        'transfats': 0, 
+        'monounsatfats': 0,
+        'polyunsatfats': 0, 
+        'cholesterol': 0, 
+        'sodium': 0,
+        'carbs': 0,
+        'fiber': 0,
+        'sugar': 0,
+        'protein': 0,
+    }
+    uncounted = []
+    unverified = []
 
-        ingquants = recipe.get_ingquants()
-        ingquantsAndUnits = []
-        for ingquant in ingquants:
-            unit = ingquant.unitDisplay()
-            ingquantsAndUnits.append((ingquant, unit))
-            # get nutrition information and add to total
-            for nutrient in nutrition.keys(): # for each nutrient in nutrition
-                # convert ingquant quantity to grams
-                in_grams = convert_units(ingquant.quantity, ingquant.unit, "g") 
-                # if convert_unit returns -1, conversion not possible
-                if in_grams <= 0 and ingquant.ingredient.weight_per_serving != 0 and ingquant.ingredient.weight_per_serving != None:
-                    # get typical serving information
-                    serving_unit = ingquant.ingredient.typical_serving_unit
-                    serving_quantity =ingquant.ingredient.typical_serving_size
-                    serving_grams = ingquant.ingredient.weight_per_serving
-                    # check if typical serving unit can be converted to the unit in the recipe
-                    convert_to_typical_serving_unit = convert_units(ingquant.quantity, ingquant.unit, serving_unit)
-                    if convert_to_typical_serving_unit > 0:
-                        # convert_to_typical_serving_unit value: quantity in typical serving unit
-                        in_grams = (float(convert_to_typical_serving_unit) * float(serving_grams)) / float(serving_quantity)
-                        record_nutrient_value(nutrient, ingquant.ingredient, in_grams, nutrition)
-                    # if serving_grams is zero or does not exist, no conversion is possible
-                    else:
-                        # add to list of uncounted ingredients
-                        if ingquant.ingredient not in uncounted:
-                            uncounted.append(ingquant.ingredient)
-                        # means the units are not compatible, so no reason to keep going with this one
-                        break
-                else:
+    ingquants = recipe.get_ingquants()
+    ingquantsAndUnits = []
+    for ingquant in ingquants:
+        unit = ingquant.unitDisplay()
+        ingquantsAndUnits.append((ingquant.quantity, unit, ingquant.ingredient))
+        # get nutrition information and add to total
+        for nutrient in nutrition.keys(): # for each nutrient in nutrition
+            # convert ingquant quantity to grams
+            in_grams = convert_units(ingquant.quantity, ingquant.unit, "g") 
+            # if convert_unit returns -1, conversion not possible
+            if in_grams <= 0 and ingquant.ingredient.weight_per_serving != 0 and ingquant.ingredient.weight_per_serving != None:
+                # get typical serving information
+                serving_unit = ingquant.ingredient.typical_serving_unit
+                serving_quantity =ingquant.ingredient.typical_serving_size
+                serving_grams = ingquant.ingredient.weight_per_serving
+                # check if typical serving unit can be converted to the unit in the recipe
+                convert_to_typical_serving_unit = convert_units(ingquant.quantity, ingquant.unit, serving_unit)
+                if convert_to_typical_serving_unit > 0:
+                    # convert_to_typical_serving_unit value: quantity in typical serving unit
+                    in_grams = (float(convert_to_typical_serving_unit) * float(serving_grams)) / float(serving_quantity)
                     record_nutrient_value(nutrient, ingquant.ingredient, in_grams, nutrition)
-        
-        # divide total nutrition by number of servings
-        servings = recipe.servings
-        for nutrient in nutrition.keys():
-            nutrition[nutrient] /= servings      
+                # if serving_grams is zero or does not exist, no conversion is possible
+                else:
+                    # add to list of uncounted ingredients
+                    if ingquant.ingredient not in uncounted:
+                        uncounted.append(ingquant.ingredient)
+                    # means the units are not compatible, so no reason to keep going with this one
+                    break
+            else:
+                record_nutrient_value(nutrient, ingquant.ingredient, in_grams, nutrition)
+    
+    # divide total nutrition by number of servings
+    servings = recipe.servings
+    for nutrient in nutrition.keys():
+        nutrition[nutrient] /= servings      
 
-        ctx = {
-            'recipe': recipe,
-            'steps': recipe.get_steps(),
-            'ingredients': ingquantsAndUnits,
-            'total': recipe.get_total_time(),
-            'nutrition': nutrition,
-            'uncounted': uncounted,
-            'unverified': unverified,
-            'model': 'recipe'
-        }
-
-        return render(request, 'recipes/detail.html', ctx)
+    ctx = {
+        'recipe': recipe,
+        'steps': recipe.get_steps(),
+        'ingredients': ingquantsAndUnits,
+        'total': recipe.get_total_time(),
+        'nutrition': nutrition,
+        'uncounted': uncounted,
+        'unverified': unverified,
+        'model': 'recipe',
+    }
+    return ctx
 
 
 @login_required
@@ -603,8 +674,15 @@ def add_ingredient(request, ingredient_id = None, source = 'recipe'):
         return HttpResponseRedirect(reverse("recipes:display_edit_recipe", args=(recipe_id,)))
 
 
+@login_required
+def delete_recipe(request, recipe_id):
+    return delete(request, Recipe, recipe_id, ingredient_id = None)
+
+
+
 
 ######## SHOPPING #######
+
 
 def compile_ing_dict(ingquant, check_ings, list_ingredients):
     ''' 
@@ -674,23 +752,27 @@ def get_shopping(list_ingredients):
     return shopping
 
 
+@login_required
 def get_shopping_context(request):
 
     list_ingredients = {}
     user = request.user
+    contents = []
     for shop in Shop.objects.filter(user = user):
         if shop.recipe:
             recipe = shop.recipe
             query = recipe.get_ingquants()
+            contents.append(recipe)
         elif shop.mealplan:
             recipe_list = shop.mealplan.get_recipe_amounts()
             # turn the dictionary into a dictionary of ingredient and quantity
             list_ingredients = {}
             query = shop.mealplan.ingquants.all()
-           
+            contents.append(shop.mealplan)
         else:
             shopping_list = shop.shopping_list
             query = shopping_list.get_ingquants()
+            contents.append(shopping_list)
         
         for ingquant in query:
             if str(ingquant.ingredient) in list_ingredients.keys():
@@ -706,6 +788,7 @@ def get_shopping_context(request):
         "shopping": shopping, 
         'shopping_lists': query_shopping_lists(request),
         'user_id': request.user.id,
+        'contents': contents
     }
 
     return context
@@ -798,48 +881,12 @@ def update_ingredients(request):
     return HttpResponse("POST request required")
 
 
-def delete_recipe(request, recipe_id):
-    return delete(request, Recipe, recipe_id, ingredient_id = None)
-
-
+@login_required
 def delete_list(request, recipe_id):
     return delete(request, ShoppingList, recipe_id, ingredient_id = None)
 
 
-def delete(request, model, recipe_id, ingredient_id = None):
-    
-    if model == ShoppingList:
-        destination = "recipes:shopping" 
-        error_destination = "recipes:update_shopping_list"
-    else:
-        destination = "recipes:index"
-        error_destination = "recipes:display_edit_recipe"
-    
-    recipe = model.objects.get(pk = recipe_id)
-    delete_object = recipe
-    
-    if ingredient_id != None:
-        model = Ingredient
-        destination = 'send to error dest'
-        delete_object = model.objects.get(pk = ingredient_id)
-    requesting_user = request.user
-
-    if delete_object.user.id == requesting_user.id:
-        delete_object.delete()
-        if destination != 'send to error dest':
-            return HttpResponseRedirect(reverse(destination))
-        else:
-            return HttpResponseRedirect(reverse(error_destination, args=(recipe_id,)))
-    else:
-        messages.info(request, 'You cannot delete something that does not belong to you.')
-        return HttpResponseRedirect(reverse(error_destination, args=(recipe_id,)))
-
-
-def cancel(request):
-    valuenext = request.POST.get('next')
-    return HttpResponseRedirect(valuenext)
-
-
+@login_required
 def display_edit(request, object_id, model_name):
     ctx = {  
         'unit_choices': UNIT_CHOICES,
@@ -919,6 +966,7 @@ def display_edit(request, object_id, model_name):
         return render(request, 'recipes/edit_shopping_list.html', context = ctx)
 
 
+@login_required
 def record_edit(request, object_id, model):
     recipe = model.objects.get(pk = object_id)
     requesting_user = request.user
@@ -1013,6 +1061,7 @@ def record_edit(request, object_id, model):
         return HttpResponseRedirect(reverse("recipes:detail_shopping_list", args=(recipe.id,)))
 
 
+@login_required
 def delete_ing(request, recipe_id):
     data = json.loads(request.body)
     ingredient = Ingredient.objects.get(pk = data.get('ing_id'))
@@ -1029,6 +1078,7 @@ def delete_ing(request, recipe_id):
     return ajax(request, 'recipes/added_ingredients_list.html', {'components': get_components(recipe)})
 
 
+@login_required
 def add_ing_to_list(request, recipe_id):
     data = json.loads(request.body)
 
@@ -1068,14 +1118,17 @@ def add_ing_to_list(request, recipe_id):
     return ajax(request, 'recipes/added_ingredients_list.html', {'components': get_components(recipe)})
 
 
+@login_required
 def update_shopping_list(request, recipe_id):
     return display_edit(request, recipe_id, 'shopping_list')
 
 
+@login_required
 def record_shopping_list(request, recipe_id):
     return record_edit(request, recipe_id, ShoppingList)
 
 
+@login_required
 def detail_shopping_list(request, recipe_id):
     if request.method == "POST":
         return HttpResponseRedirect(reverse("recipes:detail_shopping_list", kwargs= {"recipe_id": recipe_id,}))
@@ -1097,17 +1150,21 @@ def detail_shopping_list(request, recipe_id):
         return render(request, 'recipes/detail_shopping_list.html', ctx)
 
 
+@login_required
 def index_shopping_lists(request):
     return index(request, model_name = 'shopping_list')
 
 
+@login_required
 def clear_list(request):
     Shop.objects.filter(user = request.user).delete()
     ctx = get_shopping_context(request)
     return ajax(request, 'recipes/current_shopping_list.html', ctx)
 
+
 ###### PLANNING #######
 
+@login_required
 def get_plan_objects(request):
     elements = Plan.objects.filter(user = request.user)
     recipes = []
@@ -1187,6 +1244,7 @@ def planning(request):
     return render(request, 'recipes/mealplanning.html', context = ctx)
 
 
+@login_required
 def create_plan_context(request):
     plan_number = MealPlan.objects.filter(user = request.user).count() + 1  
     
@@ -1315,6 +1373,7 @@ def get_plan_meals(plan):
     return (meals, add_meals)
 
 
+@login_required
 def get_display_edit_plan_ctx(request, plan_id):
     # get the plan itself
     plan = MealPlan.objects.get(pk = plan_id)
@@ -1358,15 +1417,26 @@ def get_display_edit_plan_ctx(request, plan_id):
         'model': 'mealplan'
     }
 
+    # get shopping list
+    ctx.update(get_plan_shopping_list(plan))
+
+    # get the number of each recipe 
+
     # get the recipes and ingredients lined up for the plan
-    objects = get_plan_objects(request)
-    if objects != -1:
-        ctx['recipes'] = objects[0]
-        ctx['ingredients'] = objects[1]
+    # objects = get_plan_objects(request)
+    # # if objects != -1:
+    # #     ctx['recipes'] = objects[0]
+    # #     ctx['ingredients'] = objects[1]
 
     return ctx
 
 
+def get_contents(request, plan_id):
+    ctx = get_plan_shopping_list(MealPlan.objects.get(pk = plan_id))
+    return ajax(request, 'recipes/contents.html', ctx)
+
+
+@login_required
 def plan_add_recipe(request, plan_id):
     plan = MealPlan.objects.get(pk = plan_id)
     data = json.loads(request.body)
@@ -1427,6 +1497,7 @@ def plan_add_recipe(request, plan_id):
         })
 
 
+@login_required
 def list_recipes(request, plan_id):
 
     plan = MealPlan.objects.get(pk = plan_id)
@@ -1513,6 +1584,7 @@ def index_plans(request):
     #     })
 
 
+@login_required
 def save_plan(request, plan_id):
     plan = MealPlan.objects.get(pk = plan_id)
      
@@ -1569,6 +1641,7 @@ def save_ingquants(plan):
     return
 
 
+@login_required
 def update_and_edit_plan(request, plan_id):
     save_plan(request, plan_id)
 
@@ -1585,6 +1658,7 @@ def update_plan(request, plan_id):
     return HttpResponseRedirect(reverse("recipes:plan_detail", kwargs= {"plan_id": plan_id,}))
 
 
+@login_required
 def update_plan_ajax(request, plan_id):
     data = json.loads(request.body)
     plan = MealPlan.objects.get(pk = plan_id)
@@ -1649,6 +1723,7 @@ def update_plan_ajax(request, plan_id):
     return ajax(request, 'recipes/meal_plan_card.html', ctx)
 
 
+@login_required
 def add_base_meals(request, plan_id):
     data = json.loads(request.body)
     plan = MealPlan.objects.get(pk = plan_id)
@@ -1704,6 +1779,7 @@ def add_base_meals(request, plan_id):
     return ajax(request, 'recipes/plan_days.html', ctx)
 
 
+@login_required
 def update_days(request, plan_id):
     data = json.loads(request.body)
     plan = MealPlan.objects.get(pk = plan_id)
@@ -1781,6 +1857,7 @@ def update_days(request, plan_id):
     return ajax(request, 'recipes/plan_days.html', ctx) 
 
 
+@login_required
 def plan_detail(request, plan_id):
     
     ctx = get_display_edit_plan_ctx(request, plan_id)
@@ -1790,6 +1867,7 @@ def plan_detail(request, plan_id):
     return render(request, 'recipes/plan_display.html', context = ctx)
 
 
+@login_required
 def bulk_add(request, plan_id):
 
     data = json.loads(request.body)
@@ -1846,6 +1924,7 @@ def bulk_add(request, plan_id):
     return ajax(request, 'recipes/plan_days.html', ctx) 
 
 
+@login_required
 def delete_plan(request, plan_id):
     plan = MealPlan.objects.get(pk = plan_id)
     if plan:

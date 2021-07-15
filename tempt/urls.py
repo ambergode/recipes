@@ -23,6 +23,7 @@ urlpatterns = [
     path('recipes/', include('recipes.urls')),
     path('admin/', admin.site.urls),
     path('register/', views.register_request, name = 'register'),
+    path('sources', views.sources, name='sources'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 #Add Django site authentication urls (for login, logout, password management)

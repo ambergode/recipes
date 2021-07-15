@@ -1,11 +1,11 @@
 <div class="accordion" id="accordionExample">
     <div class="accordion-item">
-      <h5 class="accordion-header" id="headingOne">
+    <h5 class="accordion-header" id="headingOne">
         <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-            Bulk Edit
+            <strong>Bulk Edit</strong>
         </button>
-      </h5>
-      <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+    </h5>
+    <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
         <div class="accordion-body">
             <div class='row g-0 m-0 p-0'>
                 <div class='col'>
@@ -56,15 +56,16 @@
                 </div>
             </div>
         </div>
-      </div>
     </div>
-  </div>
-  <div class="row row-cols-1 row-cols-sm-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-3">
-    {% for day in days %}
-        <div class="col">
+    </div>
+</div>
+<br>
+<div class='plan-container'>
+    <div class="accordion accordion-flush w-100" id="accordionPanelsStayOpenExample">
+        {% for day in days %}
             <div id='replaceable-content-{{ day.0|stringformat:"03d" }}'>
                 {% include 'recipes/meal_plan_card.html' %}
             </div>
-        </div>
-    {% endfor %}
+        {% endfor %}
+    </div>
 </div>

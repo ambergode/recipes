@@ -1,10 +1,30 @@
+// The following function from the Django Documentation:
+// https://docs.djangoproject.com/en/3.2/ref/csrf/
+// gets the csrf cookie
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+// global variable
+const csrftoken = getCookie('csrftoken');
+
+
 function fetch_call() {
     
     // start animating the search icon with the CSS class
     $('#search-icon').addClass('blink')
     
-    const csrftoken = Cookies.get('csrftoken');
-
     // determine function for fetch to run
     const curr_pathname = window.location.pathname;
     const edit_regex = /\/recipes\/([0-9]+)\/edit\//
@@ -97,7 +117,7 @@ function reload_partial_page(html_from_view, reload_div, listeners = undefined) 
 
 function add_ingredient(evt) {
     evt.preventDefault();
-    const csrftoken = Cookies.get('csrftoken');
+    
 
     let ingredient_id = document.getElementById('ingredient_name').value    
     let model = document.querySelector('#model').value
@@ -158,7 +178,7 @@ function update_create_form() {
 }
 
 
-function record_button (evt, button_type, button_recipe, source) {
+function record_button(evt, button_type, button_recipe, source) {
     evt.preventDefault(); 
     const recipe_id = button_recipe;
     const endpoint = "/recipes/button_ajax/";
@@ -184,7 +204,7 @@ function record_button (evt, button_type, button_recipe, source) {
     let action = symbols_dict[button_type]
 
     // complete fetch call to let server know of change
-    const csrftoken = Cookies.get('csrftoken');
+    
     const body = {
         recipe_id: recipe_id, 
         tag: button_type,
@@ -219,7 +239,6 @@ function record_button (evt, button_type, button_recipe, source) {
 
 
 function clear_list() {
-
     const csrftoken = Cookies.get('csrftoken')
     fetch('/recipes/clear_list/', {
         method: 'POST',
@@ -234,6 +253,31 @@ function clear_list() {
         const reload_div = $('#replaceable-content');
         reload_partial_page(response['html_from_view'], reload_div)
     });
+}
+
+
+function multiply_servings(new_servings, recipe_id){
+    const source = window.location.pathname
+
+    body = JSON.stringify({
+        new_servings: new_servings,
+        source: source,
+        recipe_id: recipe_id,
+    })
+    fetch('/recipes/update_servings/', {
+        method: 'POST',
+        body: body,
+        headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            'X-CSRFToken': csrftoken
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(response => {
+        const reload_div = $('#replaceable-content')
+        reload_partial_page(response['html_from_view'], reload_div)
+    });  
 }
 
 
@@ -327,7 +371,7 @@ function update_ingredients(evt, button_type, button_ingquant) {
         const endpoint = "/recipes/update_ingredients/";
 
         // complete fetch call to let server know of change
-        const csrftoken = Cookies.get('csrftoken');
+        
 
         fetch(endpoint, {
             method: 'POST',
@@ -380,7 +424,7 @@ function set_edit_ing_listeners() {
                     const endpoint = "delete_ing/";
 
                     // complete fetch call to let server know of change
-                    const csrftoken = Cookies.get('csrftoken');
+                    
                     fetch(endpoint, {
                         method: 'POST',
                         body: JSON.stringify({
@@ -492,7 +536,7 @@ function set_days() {
 
 
 function update_days() {
-    const csrftoken = Cookies.get('csrftoken');
+    
     fetch('update_days/', {
         method: 'POST',
         body: JSON.stringify({
@@ -514,7 +558,7 @@ function update_days() {
 
 
 function list_fetch_call(body, day_meal) {
-    const csrftoken = Cookies.get('csrftoken');
+    
     fetch('list_recipes/', {
         method: 'POST',
         body: JSON.stringify(body),
@@ -556,7 +600,6 @@ function record_plan_selection(day, meal, recipe_id) {
 
     let planned_meals = all_planned_meals_helper(day)
 
-    const csrftoken = Cookies.get('csrftoken');
     fetch('add_recipe/', {
         method: 'POST',
         body: JSON.stringify({
@@ -575,8 +618,27 @@ function record_plan_selection(day, meal, recipe_id) {
     .then(response => response.json())
     .then(response => {
         close_lists()
+        reload_contents()
         let food_list = $('#planned_food_' + day + '_' + meal)
-        reload_partial_page(response['html_from_view'], food_list, listeners = undefined)
+        reload_partial_page(response['html_from_view'], food_list)
+        
+    })
+}
+
+
+function reload_contents(){
+    const plan_id = document.querySelector('#plan_id').value
+    fetch('/recipes/get_contents/' + plan_id, {
+        method: "POST",
+        headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            'X-CSRFToken': csrftoken
+        },
+    })
+    .then(response => response.json())
+    .then(response => {
+        const contents = $('#contents')
+        reload_partial_page(response['html_from_view'], contents)
     })
 }
 
@@ -592,11 +654,30 @@ function close_lists() {
 }
 
 
+function expand_all(expand) {
+    let accordion_items = document.querySelectorAll('.accordion-button')
+
+    accordion_items.forEach(btn => {
+        let expanded = btn.getAttribute('aria-expanded')
+        if (expanded === 'true') {
+            expanded = true
+        } else {
+            expanded = false
+        }
+
+        console.log(typeof expanded, typeof !expand)
+        if ((expanded && !expand) || (!expanded && expand)) {
+            btn.click()
+        }
+    })
+}
+
+
 function remove_food(day, meal, recipe_id) {
 
     let planned_meals = all_planned_meals_helper(day)
 
-    const csrftoken = Cookies.get('csrftoken');
+    
     fetch('add_recipe/', {
         method: 'POST',
         body: JSON.stringify({
@@ -615,6 +696,7 @@ function remove_food(day, meal, recipe_id) {
     .then(response => response.json())
     .then(response => {
         close_lists()
+        reload_contents()
         let food_list = $('#planned_food_' + day.padStart(3, '0') + '_' + meal)
         reload_partial_page(response['html_from_view'], food_list, listeners = undefined)
     })
@@ -669,7 +751,7 @@ function add_rem_meal(day, meal, action) {
             remove_meal = true
         }
     
-        const csrftoken = Cookies.get('csrftoken');
+        
         fetch('update_plan_ajax/', {
             method: 'POST',
             body: JSON.stringify({
@@ -686,6 +768,7 @@ function add_rem_meal(day, meal, action) {
         })
         .then(response => response.json())
         .then(response => {
+            reload_contents()
             let plan_card = $('#replaceable-content-' + day.padStart(3, '0'))
             reload_partial_page(response['html_from_view'], plan_card, listeners = undefined)
         })
@@ -694,21 +777,27 @@ function add_rem_meal(day, meal, action) {
 
 
 function update_ppl() {
+    // updates the people when the overarching number of people changes
     let peep_inputs = document.querySelectorAll('.peep-input')
     let original_ppl = this.dataset.original
+    let update_peeps = []
     if (peep_inputs) {
         peep_inputs.forEach(peep_input => {
             if (peep_input.value === original_ppl) {
                 peep_input.value = this.value
                 this.dataset.original = this.value
+                update_peeps.push([this.value, peep_input.dataset.meal, peep_input.dataset.day])
             }
         })
+    console.log(update_peeps)
+    // use a fetch request to update the server about the changes
+    // reload_contents()
     }
 }
 
 
 function update_meals() {
-    const csrftoken = Cookies.get('csrftoken');
+    
     fetch('add_base_meals/', {
         method: 'POST',
         body: JSON.stringify({
@@ -778,7 +867,7 @@ function bulk_add(plan_id) {
     const frequency = document.querySelector('#frequency').value
     const meal = document.querySelector('#bulk_meal').value
     
-    const csrftoken = Cookies.get('csrftoken');
+    
     fetch('/recipes/' + plan_id + '/bulk_add', {
         method: 'POST',
         body: JSON.stringify({
@@ -794,6 +883,7 @@ function bulk_add(plan_id) {
     })
     .then(response => response.json())
     .then(response => {
+        reload_contents()
         let plan_container = $('#plan-container')
         reload_partial_page(response['html_from_view'], plan_container, listeners = undefined)
     })

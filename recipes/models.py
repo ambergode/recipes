@@ -176,6 +176,8 @@ class Recipe(CommonInfo):
     public = models.BooleanField(default = False)
     # if the recipe is the original (false) or a personalized version of another (true)
     personalized = models.BooleanField(default = False)
+    # the recipe will always keep the original inputs for servings and quantities
+    # temp_servings allows users to change servings without accumulated rounding errors over time
     
     snack_or_meal = models.CharField(
         max_length = 10,
@@ -325,7 +327,7 @@ class PlannedMeal(models.Model):
 
 class IngQuant(models.Model):
     ingredient = models.ForeignKey(Ingredient, on_delete = models.CASCADE, related_name = 'ingredients')
-    quantity = models.DecimalField(max_digits = 7, decimal_places = 2, default = 0)
+    quantity = models.DecimalField(max_digits = 32, decimal_places = 8, default = 0)
     recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE, null = True, blank = True, related_name = 'ingquants')
     shopping_list = models.ForeignKey(ShoppingList, on_delete = models.CASCADE, null = True, blank = True, related_name = 'ingquants')
     meal_plan = models.ForeignKey(MealPlan, on_delete = models.CASCADE, null = True, blank = True, related_name = 'ingquants')
@@ -364,7 +366,12 @@ class Shop(models.Model):
     mealplan = models.ForeignKey(MealPlan, on_delete = models.CASCADE, null = True, blank = True)
 
     def __str__(self):
-        return str(self.recipe)
+        if self.recipe:
+            return str(self.recipe)
+        elif self.shopping_list:
+            return str(self.shopping_list)
+        else:
+            return str(self.mealplan)
 
 class Plan(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete = models.CASCADE, null = True, blank = True)

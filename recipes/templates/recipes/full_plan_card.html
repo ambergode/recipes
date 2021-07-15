@@ -6,28 +6,19 @@
     <h1>{{ plan.name }}</h1>
 </a>
 {% include 'recipes/plan_base_info.html' %}
-<div class='m-2'></div>
+<div class='m-2'>{% include 'recipes/expand_collapse.html' %}</div>
+<br>
+<br>
+
+
+<div id='contents' class='container m-2'>
+    {% include 'recipes/contents.html' %}
+</div>
 <div class='plan-container p-2 w-100'>
-    <div class="row row-cols-1 row-cols-sm-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-3">
+    <div class="accordion accordion-flush" id="accordionPanelsStayOpenExample">
         {% for day in days %}
-            <div class="col">
-                <div id='replaceable-content-{{ day|stringformat:"03d" }}'>
-                    {% include 'recipes/meal_plan_card.html' %}
-                </div>
-            </div>
+            {% include 'recipes/meal_plan_card.html' %}
         {% endfor %}
     </div>
 </div>
-<div class='container m-2'>
-    <h6>Total servings</h6>
-    <ul>
-        {% for recipe in recipes %}
-            <li>{{ recipe.1 }} servings of {{ recipe.0|title }}</li>
-        {% empty %}
-            <li>No meals yet! Go add something!</li>
-        {% endfor %}    
-    </ul>
-    
-    <h6>Shopping</h6>
-    {% include 'recipes/current_shopping_list.html' %}
-</div>
+

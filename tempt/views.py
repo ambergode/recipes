@@ -15,3 +15,6 @@ def register_request(request):
         messages.error(request, "Unsuccessful registration. Invalid information. Please try again.")
     form = NewUserForm
     return render (request=request, template_name="registration/new_user.html", context={"register_form":form})
+
+def sources(request):
+    return render(request, 'sources.html', {})

@@ -1,0 +1,38 @@
+<div class="accordion" id="accordionServings">
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="headingServings">
+        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseServings" aria-expanded="true" aria-controls="collapseServings">
+            <strong>Total servings</strong>
+        </button>
+        </h2>
+        <div id="collapseServings" class="accordion-collapse collapse show" aria-labelledby="headingServings">
+            <div class="accordion-body">
+                <ul>
+                    {% for recipe in recipes %}
+                        <li>{{ recipe.1 }} servings of {{ recipe.0|title }}</li>
+                    {% empty %}
+                        <li>No meals yet! Go add something!</li>
+                    {% endfor %}    
+                </ul>            
+            </div>
+        </div>
+    </div>
+    {% if display_only %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingList">
+            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseList" aria-expanded="true" aria-controls="collapseList">
+                <strong>Shopping List</strong>
+            </button>
+            </h2>
+            <div id="collapseList" class="accordion-collapse collapse show" aria-labelledby="headingList">
+                <div class="accordion-body">
+                    {% include 'recipes/current_shopping_list.html' %}            
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+
+    
+    

@@ -31,7 +31,7 @@ for the explanation of how to keep the footer on the bottom of the page */
     padding-bottom: 2.5rem;    /* Footer height */
 }
   
-footer {
+#footer {
     position: absolute;
     bottom: 0;
     width: 100%;

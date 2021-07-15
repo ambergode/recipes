@@ -9,6 +9,7 @@
     {% include 'recipes/fav_shop_plan_bar.html' %}
     <div class='txt-align-c'>
         <h1>Meal Plan</h1>
+        <input type='hidden' id='plan_id' value='{{ plan.id }}'>
     </div>
     <form name='edit_meal_plan' action='{% url "recipes:update_plan" plan.id %}' method='post'>
         {% csrf_token %}
@@ -18,6 +19,12 @@
         <input type='hidden' id='plan_id' value='{{ plan.id }}'>
         {% include 'recipes/plan_base_info.html' %}
         <div class='m-3'></div>
+        <div class='m-2'>{% include 'recipes/expand_collapse.html' %}</div>
+        <br>
+        <br>
+        <div id='contents' class='container'>
+            {% include 'recipes/contents.html' %}
+        </div>
         <div id='plan-container' class='plan-container m-2'>
             {% include 'recipes/plan_days.html' %}
         </div>

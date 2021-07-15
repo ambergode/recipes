@@ -9,6 +9,7 @@ urlpatterns = [
     path('<int:recipe_id>/', views.detail, name="detail"),
     
     path('create/<str:creation>', views.create, name="create_recipe"),
+    path('update_servings/', views.update_servings, name="update_servings"),
     path('<int:recipe_id>/edits_recorded/', views.record_edit_recipe, name="edit_recipe"),
     path('<int:recipe_id>/edit/', views.display_edit_recipe, name="display_edit_recipe"),
     path('<int:recipe_id>/edit/add_ing_to_list/', views.add_ing_to_list, name="add_ing_to_list"),
@@ -44,6 +45,7 @@ urlpatterns = [
     path('all_plans/', views.index_plans, name='index_plans'),
     path('<int:plan_id>/delete_plan/', views.delete_plan, name='delete_plan'),
     path('<int:plan_id>/bulk_add', views.bulk_add, name='bulk_add'),
+    path('get_contents/<int:plan_id>', views.get_contents, name='get_contents'),
 
     path('button_ajax/', views.button_ajax, name="button_ajax"),
     path('cancel/', views.cancel, name='cancel'),
