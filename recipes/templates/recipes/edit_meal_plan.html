@@ -11,7 +11,7 @@
         <h1>Meal Plan</h1>
         <input type='hidden' id='plan_id' value='{{ plan.id }}'>
     </div>
-    <form name='edit_meal_plan' action='{% url "recipes:update_plan" plan.id %}' method='post'>
+    <form name='edit_meal_plan' action='{% url "recipes:update_plan" plan.id %}' method='post' onsubmit='processing()'>
         {% csrf_token %}
         <div class='fixed-bottom'>
             <input type="submit" id="update_plan" value='Update Meal Plan' class='btn-sm btn-dark btn-block w-100'>  

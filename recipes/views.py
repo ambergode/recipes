@@ -272,26 +272,33 @@ def cancel(request):
 
 
 def update_servings(request):
+    success = True
     data = json.loads(request.body)
     servings = data['new_servings']
     source = data['source']
     recipe_id = data['recipe_id']
-
     try:
-        if float(servings) > 0:
-            recipe = Recipe.objects.get(pk = recipe_id)
-            multiplier = float(servings) / float(recipe.servings)
-            recipe.servings = servings
-            recipe.save()
+        servings = float(servings)
+    except ValueError:  
+        success = False
 
-            for ingquant in recipe.ingquants.all():
-                ingquant.quantity = float(ingquant.quantity) * multiplier
-                ingquant.save()
-        
-        else:  
-            messages.info(request, f"Recipe servings must be a positive number.")
-    except ValueError:
-        messages.info(request, f"Recipe servings must be a positive number.")
+    recipe = Recipe.objects.get(pk = recipe_id)
+
+    if abs(servings - 0) < .0000001:
+        Shop.objects.get(
+            recipe = recipe,
+            user = request.user
+        ).delete()
+    elif servings > 0:
+        multiplier = float(servings) / float(recipe.servings)
+        recipe.servings = servings
+        recipe.save()
+
+        for ingquant in recipe.ingquants.all():
+            ingquant.quantity = float(ingquant.quantity) * multiplier
+            ingquant.save()
+    else:  
+        success = False
 
     if source == '/recipes/shoppinglist/':
         template = 'recipes/current_shopping_list.html'
@@ -300,11 +307,43 @@ def update_servings(request):
         template = 'recipes/display_ingredient_list.html'
         ctx = get_detail_ctx(request, recipe_id)
 
+    if success:
+        return ajax(request, template, ctx)
+    else:
+        return JsonResponse({ 'success': False })
 
 
-    return ajax(request, template, ctx)
+def update_peeps(request):
+    data = json.loads(request.body)
+    peeps = data['peeps']
+    plan_id = data['plan_id']
+    plan = MealPlan.objects.get(pk = plan_id)
+    plan.people = data['plan_peeps']
+    plan.save() 
+
+    # peeps is of the format: [(number of servings, meal, day),...]
+    for peep in peeps:
+        # try:
+        if float(peep[0]) > 0:
+            planned_meal = PlannedMeal.objects.get(
+                user = request.user,
+                meal_plan = plan,
+                meal = peep[1],
+                day = peep[2]
+            )
+            planned_meal.servings = peep[0]
+            planned_meal.save()
+
+        else:
+            return JsonResponse({ 'success': False })
+        # except:
+        #     return JsonResponse({ 'success': False })
+
+    return get_contents(request, plan_id)
 
 
+def about(request):
+    return render(request, 'recipes/about.html')
 
 
 ########## RECIPES ########
@@ -358,7 +397,8 @@ def index(request, model_name='recipe'):
             recipe_list = model.objects.filter(pk__in = pks)
 
     if data.get("q") != None:
-        recipe_list = recipe_list.filter(name__icontains=data.get("q").lower())
+        args = get_q_args(data)
+        recipe_list = recipe_list.filter(*args)
 
     ctx = {}
 
@@ -968,6 +1008,7 @@ def display_edit(request, object_id, model_name):
 
 @login_required
 def record_edit(request, object_id, model):
+    success = True
     recipe = model.objects.get(pk = object_id)
     requesting_user = request.user
     
@@ -1024,25 +1065,26 @@ def record_edit(request, object_id, model):
     recipe.name = normalize(request.POST.get('name'))
     recipe.description = request.POST.get('description')
     recipe.user = request.user
-
+            
     added_components = recipe.get_ingquants()
     components_ingredients = []
     for component in added_components:
         components_ingredients.append(component.ingredient.id)
         new_quantity = request.POST.get('quantity_' + str(component.id), None)
-        if new_quantity != None:
+
+        try: 
+            if float(new_quantity) <= 0:
+                success = False
             component.quantity = new_quantity
+        except ValueError:
+            success = False
+
         new_unit = request.POST.get('name_' + str(component.id) +"-choose_unit", None)
         if new_unit != None:
             component.unit = new_unit
         component.save()
 
     recipe.save()
-    
-    if model == Recipe:
-        model_name = 'recipe'
-    else:
-        model_name = 'shopping_list'
 
     # if request.POST.get('add_ingredient') != None:
     #     return add_ingredient(request, source = model_name)
@@ -1054,11 +1096,17 @@ def record_edit(request, object_id, model):
     # if request.POST.get('delete_ingredient') != None:
     #     ingredient_id = request.POST.get('delete_ingredient')[18:]
     #     return delete(request, model, recipe.id, ingredient_id)
- 
-    if model == Recipe:
-        return HttpResponseRedirect(reverse("recipes:detail", args=(recipe.id,)))
+    if success:
+        if model == Recipe:
+            return HttpResponseRedirect(reverse("recipes:detail", args=(recipe.id,)))
+        else:
+            return HttpResponseRedirect(reverse("recipes:detail_shopping_list", args=(recipe.id,)))
     else:
-        return HttpResponseRedirect(reverse("recipes:detail_shopping_list", args=(recipe.id,)))
+        messages.error(request, 'Please make sure to enter a positive quantity for each ingredient.')
+        if model == Recipe:
+            return display_edit_recipe(request, recipe.id)
+        else:
+            return record_shopping_list(request, recipe.id)
 
 
 @login_required
@@ -1411,22 +1459,13 @@ def get_display_edit_plan_ctx(request, plan_id):
         'plan': plan, 
         'meals': meals,
         'meal_time_choices': MEALTIME_CHOICES,
-        # 'add_meals': add_meals,
         'planned_meals': planned_meals,
         'days': days,
-        'model': 'mealplan'
+        'model': 'mealplan',
     }
 
     # get shopping list
     ctx.update(get_plan_shopping_list(plan))
-
-    # get the number of each recipe 
-
-    # get the recipes and ingredients lined up for the plan
-    # objects = get_plan_objects(request)
-    # # if objects != -1:
-    # #     ctx['recipes'] = objects[0]
-    # #     ctx['ingredients'] = objects[1]
 
     return ctx
 
@@ -1497,18 +1536,23 @@ def plan_add_recipe(request, plan_id):
         })
 
 
-@login_required
-def list_recipes(request, plan_id):
-
-    plan = MealPlan.objects.get(pk = plan_id)
-    data = json.loads(request.body)
+def get_q_args(data):
     q = data.get("q").strip()
-
     qs = q.split()
     args = []
     for param in qs:
         param = param.strip(", /-")
         args.append(Q(name__icontains=param))
+    return args
+
+
+@login_required
+def list_recipes(request, plan_id):
+
+    plan = MealPlan.objects.get(pk = plan_id)
+    data = json.loads(request.body)
+    args = get_q_args(data)
+
     # need to only return recipes that are public or belong to the user
     recipes = Recipe.objects.filter(*args).filter(Q(public = True) | Q(user = request.user))
 
@@ -1519,6 +1563,7 @@ def list_recipes(request, plan_id):
 def display_edit_plan(request, plan_id):
     
     ctx = get_display_edit_plan_ctx(request, plan_id)
+    ctx['edit'] = True
 
     return render(request, 'recipes/edit_meal_plan.html', context = ctx)
 
@@ -1597,8 +1642,10 @@ def save_plan(request, plan_id):
         meal = pm.meal
         # record the number of servings per meal
         servings = request.POST.get('meal_servings_' + day + '_' + meal)
-        if servings:
+        if float(servings) > 0:
             pm.servings = servings
+        else:
+            return -1
         # record any notes
         notes = request.POST.get('notes_' + day + '_' + meal)
         if notes:
@@ -1614,11 +1661,13 @@ def save_plan(request, plan_id):
 
     # record the number of people
     people = request.POST.get('people')
-    if people:
+    if float(people) > 0:
         plan.people = people
+    else:
+        return -1
     
     plan.save()
-    return 
+    return 0
 
 
 def save_ingquants(plan):
@@ -1643,19 +1692,27 @@ def save_ingquants(plan):
 
 @login_required
 def update_and_edit_plan(request, plan_id):
-    save_plan(request, plan_id)
+    success = save_plan(request, plan_id)
 
-    return HttpResponseRedirect(reverse("recipes:display_edit_plan", kwargs= {
+    if success == 0:
+        return HttpResponseRedirect(reverse("recipes:display_edit_plan", kwargs= {
         "plan_id": plan_id, 
         }))
+    else:
+        messages.error(request, 'Please make sure all serving sizes are positive.')
+        return display_edit_plan(request, plan_id) 
 
 
 @login_required
 def update_plan(request, plan_id):
     
-    save_plan(request, plan_id)
+    success = save_plan(request, plan_id)
 
-    return HttpResponseRedirect(reverse("recipes:plan_detail", kwargs= {"plan_id": plan_id,}))
+    if success == 0:
+        return HttpResponseRedirect(reverse("recipes:plan_detail", kwargs= {"plan_id": plan_id,}))
+    else:
+        messages.error(request, 'Please make sure all serving sizes are positive.')
+        return display_edit_plan(request, plan_id) 
 
 
 @login_required
@@ -1936,3 +1993,5 @@ def delete_plan(request, plan_id):
     else:
         messages.info(request, 'Plan no longer exists')
     return HttpResponseRedirect(reverse("recipes:planning"))    
+
+

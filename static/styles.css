@@ -257,11 +257,11 @@ select, .recipe-search {
     background-color: lightgray;
 }
 .added_recipe {
-    width: 100%;
+    width: 95%;
     border: solid lightgray 1px;
     border-radius: 5px;
     padding: 0.5em;
-    margin:0;
+    margin:auto;
     margin-top: 0.25em;
     background-color: #e8fff3;
 }
@@ -272,4 +272,18 @@ select, .recipe-search {
 
 .card-footer {
     min-height:3em;
+}
+
+.plan_thumb {
+    max-height: 100px;
+}
+
+#loading {
+    text-align: center;
+    margin:auto;
+    padding:10em;
+}
+
+.justify {
+    text-align: justify;
 }

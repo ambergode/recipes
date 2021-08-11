@@ -1,5 +1,11 @@
 {% for recipe in recipes %}
-    <div class='recipe_option' id='{{ recipe.id }}'>{{ recipe }}</div>
+    <div class='recipe_option' id='{{ recipe.id }}'>
+        {% if recipe.photo %}
+            <img src="{{ recipe.photo.url }}" class="img-thumbnail plan_thumb" alt="{{ recipe.name|title }}" title="{{ recipe.name|title }}">
+        {% else %}
+            {{ recipe }}
+        {% endif %}
+    </div>
 {% empty %}
     <div class='recipe_option' id='no_recipe'>Nothing here! Try a different search.</div>
 {% endfor %}

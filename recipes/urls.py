@@ -5,6 +5,7 @@ from . import views
 app_name = 'recipes'
 urlpatterns = [
     path('', views.index, name='index'),
+    path('about/', views.about, name='about'),
 
     path('<int:recipe_id>/', views.detail, name="detail"),
     
@@ -46,6 +47,7 @@ urlpatterns = [
     path('<int:plan_id>/delete_plan/', views.delete_plan, name='delete_plan'),
     path('<int:plan_id>/bulk_add', views.bulk_add, name='bulk_add'),
     path('get_contents/<int:plan_id>', views.get_contents, name='get_contents'),
+    path('update_peeps/', views.update_peeps, name='update_peeps'),
 
     path('button_ajax/', views.button_ajax, name="button_ajax"),
     path('cancel/', views.cancel, name='cancel'),

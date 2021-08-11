@@ -29,10 +29,12 @@
                 <button name='delete_plan' id="delete_plan_{{ plan.id }}" onclick="confirm_delete({{ plan.id }})" class='btn-sm btn-danger mx-1'>  
                     Delete
                 </button>
-                <form action='{% url "recipes:display_edit_plan" plan.id %}' method='post' class='g-0 m-0 p-0'>
-                    {% csrf_token %}
-                    <input type='submit' value='Edit' class='btn btn-secondary mx-1'>
-                </form>
+                {% if not edit %}
+                    <form action='{% url "recipes:display_edit_plan" plan.id %}' method='post' class='g-0 m-0 p-0'>
+                        {% csrf_token %}
+                        <input type='submit' value='Edit' class='btn btn-secondary mx-1'>
+                    </form>
+                {% endif %}
             </div>
         {% endwith %}
     {% endifequal %}

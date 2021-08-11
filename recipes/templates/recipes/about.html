@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %} 
+    About SeeFood
+{% endblock %}
+
+{% block main %}
+
+{% load static%}
+<div>
+    <h1 class='txt-align-c'><img src= {% static "prawn.png" %} alt='prawn icon'>SeeFood</h1>
+    <figure class='txt-align-c'>
+        <blockquote class="blockquote">
+            <p>If I see food, I eat it.</p>
+        </blockquote>
+        <figcaption class="blockquote-footer">
+            My family and most of the people I know
+        </figcaption>
+    </figure>
+
+    <p class='justify'>
+        SeeFood is here to help inspire good choices and planning. Upload scrumptious looking photos of your
+        favorite dishes along with their accompanying recipes, and then build meal plans and shopping lists all in one place.
+    </p>
+    
+    <p class='justify'>
+        This project springs from my husband's and my daily need to eat something and the uninspired choices we make in that process.
+        There are lots of delicious, healthy foods that we both love but forget about - "Out of sight, out of mind," and all that - and usually 
+        reached for what we could see. We dreamt of a way to bring more organization and inspiration to our meals, and from that 
+        desire was born SeeFood!
+    </p>
+    <p>
+        - Amber Oakley, creator
+    </p>
+</div>
+
+{% endblock %}

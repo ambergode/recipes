@@ -12,7 +12,7 @@
         <!-- http://getbootstrap.com/docs/5.0/ -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
         <!-- favicon -->
-        <link href= {% static "onion.ico" %} type="image/ico" rel="shortcut icon">
+        <link href= {% static "prawn.png" %} type="image/png" rel="shortcut icon">
 
         <link href= {% static 'styles.css' %} rel="stylesheet">
 
@@ -31,7 +31,7 @@
         <!-- Sweet Alert CDN-->
         <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 
-        <title>Tempt Me: {% block title %}{% endblock %}</title>
+        <title>SeeFood: {% block title %}{% endblock %}</title>
         {% block head %}{% endblock %}
 
         <script src= {% static 'scripts/recipes/js_functions.js' %}></script>  
@@ -43,7 +43,9 @@
             <div id="content-wrap">
          
                 <nav class="navbar navbar-expand-md sticky-top navbar-light border">
-                    <a class="navbar-brand" href="{% url 'recipes:index' %}">Tempt Me</a>
+                    <a class="navbar-brand" href="{% url 'recipes:about' %}">
+                        <img src= {% static "prawn.png" %} alt='prawn icon'>Food
+                    </a>
                     <button aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-target="#navbar" data-toggle="collapse" type="button">
                         <span class="navbar-toggler-icon"></span>
                     </button>
@@ -74,7 +76,12 @@
                         </div>
                     </div>
                 </nav>
-
+                <div id='loading' hidden>
+                    <h5>Processing</h5>
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
                 <main>
                     {% include 'recipes/messages.html' %}
                     

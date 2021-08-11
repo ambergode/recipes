@@ -1,11 +1,19 @@
 {% for recipe in recipes %}
-    <div class='row added_recipe'>
+    <div class='row {% if not recipe.photo %}added_recipe{% endif %}'>
         <div class='col'>
             <a href='{% url "recipes:detail" recipe.id %}' class='undecorated'>
                 {% ifequal day 'all' %}
-                    <div class='planned_meals' id='all_{{ recipe.id }}'>{{ recipe }}</div>
+                    {% if recipe.photo %}
+                        <div><img src="{{ recipe.photo.url }}" class="img-thumbnail plan_thumb" alt="{{ recipe.name|title }}" title="{{ recipe.name|title }}"></div>
+                    {% else %}
+                        <div class='planned_meals' id='all_{{ recipe.id }}'>{{ recipe }}</div>
+                    {% endif %}
                 {% else %}
-                    <div id='{{ day|stringformat:"03d" }}_{{ recipe.id|stringformat:"04d" }}_{{ meal }}'>{{ recipe }}</div>
+                    {% if recipe.photo %}
+                        <div><img src="{{ recipe.photo.url }}" class="img-thumbnail plan_thumb" alt="{{ recipe.name|title }}" title="{{ recipe.name|title }}"></div>
+                    {% else %}
+                        <div id='{{ day|stringformat:"03d" }}_{{ recipe.id|stringformat:"04d" }}_{{ meal }}'>{{ recipe|title }}</div>
+                    {% endif %}
                 {% endifequal %}
             </a>
         </div>

@@ -257,27 +257,56 @@ function clear_list() {
 
 
 function multiply_servings(new_servings, recipe_id){
-    const source = window.location.pathname
 
-    body = JSON.stringify({
-        new_servings: new_servings,
-        source: source,
-        recipe_id: recipe_id,
-    })
-    fetch('/recipes/update_servings/', {
-        method: 'POST',
-        body: body,
-        headers: {
-            "X-Requested-With": "XMLHttpRequest",
-            'X-CSRFToken': csrftoken
-        },
-        credentials: 'same-origin'
-    })
-    .then(response => response.json())
-    .then(response => {
-        const reload_div = $('#replaceable-content')
-        reload_partial_page(response['html_from_view'], reload_div)
-    });  
+    function multiply_servings_helper(new_servings, recipe_id){
+        const source = window.location.pathname
+        body = JSON.stringify({
+            new_servings: new_servings,
+            source: source,
+            recipe_id: recipe_id,
+        })
+        fetch('/recipes/update_servings/', {
+            method: 'POST',
+            body: body,
+            headers: {
+                "X-Requested-With": "XMLHttpRequest",
+                'X-CSRFToken': csrftoken
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(response => {
+            if (response['success'] === true) {
+                const reload_div = $('#replaceable-content')
+                reload_partial_page(response['html_from_view'], reload_div)
+            } else {
+                swal({
+                    title: "Please enter a positive number for each recipe.",
+                    icon: "warning",
+                })
+            }
+        });  
+    }
+
+    if (new_servings > 0) {
+        multiply_servings_helper(new_servings, recipe_id)
+    } else if (new_servings === '0') {
+        swal({
+            title: "Do you want to remove this item from your shopping list?",
+            icon: "warning",
+            buttons: true,
+        })
+        .then(willDelete => {
+            if (willDelete) {
+                multiply_servings_helper(new_servings, recipe_id)
+            }
+        });
+    } else {
+        swal({
+            title: "Please enter a positive number for each recipe.",
+            icon: "warning",
+        })
+    }    
 }
 
 
@@ -536,7 +565,7 @@ function set_days() {
 
 
 function update_days() {
-    
+    processing(set = true)
     fetch('update_days/', {
         method: 'POST',
         body: JSON.stringify({
@@ -553,7 +582,23 @@ function update_days() {
     .then(response => {
         let reload_div = $('#plan-container')
         reload_partial_page(response['html_from_view'], reload_div, listeners = undefined)
+        processing(set = false)
     });
+}
+
+
+function processing(set = true){
+    const loading = document.querySelector('#loading')
+    const main = document.querySelector('main')
+
+    let show = loading
+    let hide = main
+    if (!set) {
+       show = main
+       hide = loading 
+    } 
+    show.removeAttribute('hidden')
+    hide.setAttribute('hidden', true)
 }
 
 
@@ -776,22 +821,70 @@ function add_rem_meal(day, meal, action) {
 }
 
 
+function update_peep(value, meal, day){
+    // update peeps should be a list of the form:
+    // [(servings, meal, day), ...]
+    let update_peeps = []
+    update_peeps.push([value, meal, day])
+    update_ppl_peep_helper(update_peeps) 
+}
+
+
+function update_ppl_peep_helper(update_peeps){
+    // update peeps should be a list of the form:
+    // [(servings, meal, day), ...]
+    processing(set = true)
+    const plan_id = document.querySelector('#plan_id').value
+    const peep_div = document.querySelector('#people')
+    const plan_peeps = peep_div.value
+    fetch('/recipes/update_peeps/', {
+        method: 'POST',
+        body: JSON.stringify({
+            peeps: update_peeps,
+            plan_id: plan_id,
+            plan_peeps: plan_peeps,
+        }),
+        headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            'X-CSRFToken': csrftoken
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(response => {
+        processing(set = false)
+        peep_div.value = plan_peeps
+        if (response['success']) {
+            reload_contents()
+        } else {
+            swal({
+                title: "Please enter a positive number of servings.",
+                icon: "warning",
+            })
+        }
+    })
+}
+
+
 function update_ppl() {
-    // updates the people when the overarching number of people changes
+    // updates the servings for meals when the overarching number of people changes
     let peep_inputs = document.querySelectorAll('.peep-input')
     let original_ppl = this.dataset.original
     let update_peeps = []
+    let reload = false
     if (peep_inputs) {
         peep_inputs.forEach(peep_input => {
+            console.log(peep_input.value, original_ppl)
             if (peep_input.value === original_ppl) {
                 peep_input.value = this.value
-                this.dataset.original = this.value
                 update_peeps.push([this.value, peep_input.dataset.meal, peep_input.dataset.day])
+                reload = true
             }
+            this.dataset.original = this.value
         })
-    console.log(update_peeps)
-    // use a fetch request to update the server about the changes
-    // reload_contents()
+    if (reload) {
+        update_ppl_peep_helper(update_peeps)    
+    }
     }
 }
 
@@ -867,7 +960,7 @@ function bulk_add(plan_id) {
     const frequency = document.querySelector('#frequency').value
     const meal = document.querySelector('#bulk_meal').value
     
-    
+    processing(set = true)
     fetch('/recipes/' + plan_id + '/bulk_add', {
         method: 'POST',
         body: JSON.stringify({
@@ -886,6 +979,7 @@ function bulk_add(plan_id) {
         reload_contents()
         let plan_container = $('#plan-container')
         reload_partial_page(response['html_from_view'], plan_container, listeners = undefined)
+        processing(set = false)
     })
 
     return false
@@ -942,7 +1036,6 @@ let scheduled_function = false
 
 $(function(){ // this will be called when the DOM is ready
     // start out with no scheduled functions
-    
 
     // listen for search in user_input search bar
     $("#user-input").on('keyup', () => {
@@ -962,7 +1055,6 @@ $(function(){ // this will be called when the DOM is ready
             scheduled_function = schedule_function()
         })
     })
-
 
     // listen for shopping, planning, and favorite changes
     set_button_listeners()
@@ -994,7 +1086,7 @@ $(function(){ // this will be called when the DOM is ready
             });
         })
     }
-
+    
     // if there is a step list, add a listener
     let step_list = document.getElementById("step_list")
     if (step_list != null) {

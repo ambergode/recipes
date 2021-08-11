@@ -2,15 +2,17 @@
 {% with day.1 as day_meals %}{% with day.2 as add_meals %}{% with day.0 as day %}
 <div class="accordion-item" id='replaceable-content-{{ day|stringformat:"03d" }}'>
     <h2 class="accordion-header" id="panelsStayOpen-heading{{ forloop.counter }}">
-    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapse{{ forloop.counter }}" aria-expanded="true" aria-controls="panelsStayOpen-collapse{{ forloop.counter }}">
-        {% if plan.start_date %}
-            <strong> {{ plan.start_date|plus_days:day|date:'l'}} {{ plan.start_date|plus_days:day|date:'n.d.y'}}</strong>  
-        {% else %}
-            <strong> Day {{ day|add:'1' }}</strong>  
-        {% endif %} 
-    </button>
+        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapse{{ forloop.counter }}" 
+            aria-expanded="true" aria-controls="panelsStayOpen-collapse{{ forloop.counter }}">
+            {% if plan.start_date %}
+                <strong> {{ plan.start_date|plus_days:day|date:'l'}} {{ plan.start_date|plus_days:day|date:'n.d.y'}}</strong>  
+            {% else %}
+                <strong> Day {{ day|add:'1' }}</strong>  
+            {% endif %} 
+        </button>
     </h2>
-    <div id="panelsStayOpen-collapse{{ forloop.counter }}" class="accordion-collapse collapse show" aria-labelledby="panelsStayOpen-heading{{ forloop.counter }}">
+    <div id="panelsStayOpen-collapse{{ forloop.counter }}" class="accordion-collapse collapse show" 
+        aria-labelledby="panelsStayOpen-heading{{ forloop.counter }}">
         <div class="accordion-body">
             <div class='container'>
                 {% if not display_only %}
@@ -42,47 +44,60 @@
                 {% endif %}
                 <div class='row g-0 p-0 m-0'>
                     {% for meal in planned_meals|get_item:day %}
-                        <div class="col g-0 p-0 m-2 txt-align-c">
-                            <strong>{{ meal.meal|title }}</strong> for 
-                            {% if display_only %}
-                                {{ meal.servings }}
-                            {% else %}
-                                <input type='hidden' id='id_{{ day|stringformat:"03d" }}_{{ meal.meal }}' value='{{ meal.id }}'>
-                                <input name='meal_servings_{{ day|stringformat:"03d" }}_{{ meal.meal }}' 
-                                    id='{{ day|stringformat:"03d" }}_{{ meal.meal }}' type='number' value='{{ meal.servings }}' 
-                                    step='1' class='peep-input' data-meal='{{ meal.meal }}' data-day='{{ day }}'>
-                                {% if not meal.notes %}
-                                    <span>
-                                        <i class="fas fa-comment-alt p-2" name='add_notes' id='add_notes_{{ day|stringformat:"03d" }}_{{ meal.meal }}' onclick='add_note("{{ day }}", "{{ meal.meal }}")'></i>
-                                    </span>
-                                {% endif %}
-                                <div class='replaced_content_container'>
-                                    <input type='text' name='user-input' class='recipe-search' id='search_{{ day|stringformat:"03d" }}_{{ meal.meal }}' 
-                                        placeholder="search recipes" autocomplete="off" onkeyup='schedule_list_call_helper(this)' 
-                                        onclick='close_lists(); schedule_list_call_helper(this)'>
-                                    <div id='replaceable-content_{{ day|stringformat:"03d" }}_{{ meal.meal }}' class='replaced_content'></div>
-                                </div>
-                            {% endif %}
-                            <div id='planned_food_{{ day|stringformat:"03d" }}_{{ meal.meal }}'>
-                                {% with meal.recipes.all as recipes %}
-                                    {% with meal.meal as meal %}
-                                        {% include 'recipes/plan_added_recipes.html' %}
-                                    {% endwith %}
-                                {% endwith %}
-                            </div>
-                            {% if meal.notes %}
-                                <div>
-                                    Notes: 
+                        <div class="col g-0 p-0 m-0">
+                            <div class='row'>
+                                <div class='col'>
+                                    <strong>{{ meal.meal|title }}</strong> for 
                                     {% if display_only %}
-                                        {{ meal.notes }}
+                                        {{ meal.servings }}
                                     {% else %}
-                                        <input type='text' name='notes_{{ day|stringformat:"03d" }}_{{ meal.meal }}' id='notes_{{ day|stringformat:"03d" }}_{{ meal.meal }}' class='form-control' value='{{ meal.notes }}' autocomplete="off">
+                                        <input type='hidden' id='id_{{ day|stringformat:"03d" }}_{{ meal.meal }}' value='{{ meal.id }}'>
+                                        <input onchange='update_peep(this.value, {{ meal.meal }}.value, {{ day }})' 
+                                            name='meal_servings_{{ day|stringformat:"03d" }}_{{ meal.meal }}' 
+                                            id='{{ day|stringformat:"03d" }}_{{ meal.meal }}' type='number' value='{{ meal.servings }}' 
+                                            step='1' class='peep-input' data-meal='{{ meal.meal }}' data-day='{{ day }}'>
+                                        {% if not meal.notes %}
+                                            <span>
+                                                <i class="fas fa-comment-alt p-2" name='add_notes' 
+                                                    id='add_notes_{{ day|stringformat:"03d" }}_{{ meal.meal }}' 
+                                                    onclick='add_note("{{ day }}", "{{ meal.meal }}")'></i>
+                                            </span>
+                                        {% endif %}
                                     {% endif %}
                                 </div>
-                            {% else %}
-                                <div id='replaceable_notes_{{ day|stringformat:"03d" }}_{{ meal.meal }}'>
+                            </div>
+                            <div class='row'>
+                                {% if not display_only %}
+                                    <div class='col m-2 replaced_content_container'>
+                                        <input type='text' name='user-input' class='recipe-search' id='search_{{ day|stringformat:"03d" }}_{{ meal.meal }}' 
+                                            placeholder="search recipes" autocomplete="off" onkeyup='schedule_list_call_helper(this)' 
+                                            onclick='close_lists(); schedule_list_call_helper(this)'>
+                                        <div id='replaceable-content_{{ day|stringformat:"03d" }}_{{ meal.meal }}' class='replaced_content'></div>
+                                    </div>
+                                {% endif %}
+                                <div id='planned_food_{{ day|stringformat:"03d" }}_{{ meal.meal }}'>
+                                    {% with meal.recipes.all as recipes %}
+                                        {% with meal.meal as meal %}
+                                            {% include 'recipes/plan_added_recipes.html' %}
+                                        {% endwith %}
+                                    {% endwith %}
                                 </div>
-                            {% endif %}
+                                {% if meal.notes %}
+                                    <div>
+                                        Notes: 
+                                        {% if display_only %}
+                                            {{ meal.notes }}
+                                        {% else %}
+                                            <input type='text' name='notes_{{ day|stringformat:"03d" }}_{{ meal.meal }}' 
+                                                id='notes_{{ day|stringformat:"03d" }}_{{ meal.meal }}' class='form-control' 
+                                                value='{{ meal.notes }}' autocomplete="off">
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <div id='replaceable_notes_{{ day|stringformat:"03d" }}_{{ meal.meal }}'>
+                                    </div>
+                                {% endif %}
+                            </div>
                         </div>
                     {% empty %}
                         <div class='txt-align-c'>

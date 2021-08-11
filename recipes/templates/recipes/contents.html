@@ -20,11 +20,11 @@
     {% if display_only %}
         <div class="accordion-item">
             <h2 class="accordion-header" id="headingList">
-            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseList" aria-expanded="true" aria-controls="collapseList">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseList" aria-expanded="false" aria-controls="collapseList">
                 <strong>Shopping List</strong>
             </button>
             </h2>
-            <div id="collapseList" class="accordion-collapse collapse show" aria-labelledby="headingList">
+            <div id="collapseList" class="accordion-collapse collapse" aria-labelledby="headingList">
                 <div class="accordion-body">
                     {% include 'recipes/current_shopping_list.html' %}            
                 </div>
