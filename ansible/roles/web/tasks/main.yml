@@ -29,6 +29,10 @@
   script: post_deploy_root.sh
   args:
     chdir: "{{ app_root }}"
-    
-- include: nginx.yml    
+     
+- include: cert.yml  
+- include: nginx.yml
+  vars:
+    site: "{{ subdomain }}"
+    site_template: "nginx-site.j2"
 - include: systemd.yml

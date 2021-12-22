@@ -6,5 +6,6 @@
     - app_root: /usr/lib/seefood
     - local_root: ..
     - subdomain: seefood
+    - domain: seefood.electronstudio.org
   roles:
     - web
