@@ -3,6 +3,7 @@
   apt:
     pkg:
     - nginx
+    - python3-certbot-nginx
 
 - name: "site available {{ site }}"
   become: yes

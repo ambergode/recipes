@@ -37,10 +37,16 @@
                     <input type="submit" id="edit_recipe" value="Update Recipe" class='btn-sm btn-dark btn-block w-100'>  
                 </div>
                 <div class='title'>
-                        <input type="text" name="name" autocomplete='off' value='{{ recipe.name|title }}' class='w-100'>
-                        {% if recipe.personalized %}
-                            <i class="fas fa-user-edit"></i>
-                        {% endif %}
+                    {% if recipe.name %}
+                        <input type='text' name='name' value='{{ recipe.name|title }}' class='w-100' autocomplete="off">
+                    {% elif recipe.id %}
+                        <input type='text' name='name' value='Recipe {{ recipe.id }}' class='w-100' autocomplete="off">
+                    {% else %}
+                        <input type='text' name='name' placeholder='name' class='w-100' autocomplete="off">
+                    {% endif %}
+                    {% if recipe.personalized %}
+                        <i class="fas fa-user-edit"></i>
+                    {% endif %}
                 </div>            
                 <div class='row row-cols-1 row-cols-md-2 g-0'>
                     <div class='col'>

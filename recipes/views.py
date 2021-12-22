@@ -1063,28 +1063,35 @@ def record_edit(request, object_id, model):
 
     # recipe and shopping list
     recipe.name = normalize(request.POST.get('name'))
-    recipe.description = request.POST.get('description')
-    recipe.user = request.user
-            
-    added_components = recipe.get_ingquants()
-    components_ingredients = []
-    for component in added_components:
-        components_ingredients.append(component.ingredient.id)
-        new_quantity = request.POST.get('quantity_' + str(component.id), None)
 
-        try: 
-            if float(new_quantity) <= 0:
+    if recipe.name == "":
+        success = False
+        error_message = "Please enter a name for your recipe."
+    else:
+        recipe.description = request.POST.get('description')
+        recipe.user = request.user
+                
+        added_components = recipe.get_ingquants()
+        components_ingredients = []
+        for component in added_components:
+            components_ingredients.append(component.ingredient.id)
+            new_quantity = request.POST.get('quantity_' + str(component.id), None)
+
+            try: 
+                if float(new_quantity) <= 0:
+                    success = False
+                    error_message = "Please enter a positive quantity for each ingredient."
+                component.quantity = new_quantity
+            except ValueError:
                 success = False
-            component.quantity = new_quantity
-        except ValueError:
-            success = False
+                error_message = "Please enter a numerical quantity for each ingredient."
 
-        new_unit = request.POST.get('name_' + str(component.id) +"-choose_unit", None)
-        if new_unit != None:
-            component.unit = new_unit
-        component.save()
+            new_unit = request.POST.get('name_' + str(component.id) +"-choose_unit", None)
+            if new_unit != None:
+                component.unit = new_unit
+            component.save()
 
-    recipe.save()
+        recipe.save()
 
     # if request.POST.get('add_ingredient') != None:
     #     return add_ingredient(request, source = model_name)
@@ -1102,7 +1109,7 @@ def record_edit(request, object_id, model):
         else:
             return HttpResponseRedirect(reverse("recipes:detail_shopping_list", args=(recipe.id,)))
     else:
-        messages.error(request, 'Please make sure to enter a positive quantity for each ingredient.')
+        messages.error(request, error_message)
         if model == Recipe:
             return display_edit_recipe(request, recipe.id)
         else:
@@ -1308,8 +1315,11 @@ def create_plan_context(request):
 @login_required
 def create_plan(request):
     ctx = create_plan_context(request)
-        
+    ctx = {'model': 'mealplan'}
+    ctx.update(create_plan_context(request))
+
     if request.method == 'POST':
+        plan_number = request.POST.get('plan_id')
         name = request.POST.get('name') 
         people = request.POST.get('people')
         start_date = request.POST.get('startdate')
@@ -1323,16 +1333,20 @@ def create_plan(request):
         dessert = request.POST.get('dessert') 
         other = request.POST.get('other')
 
+        # Check to make sure name exists
+        if name == "":
+            messages.info(request, ("Please include a name for your plan."))
+            return render(request, 'recipes/create_recipe.html', ctx)
+        
         # Check to make sure name is unique
         if MealPlan.objects.filter(name = name, user = request.user).count() > 0:
             messages.info(request, ("You already have a plan called " + name + ". Please use a unique name."))
-            ctx['plan'] = MealPlan.objects.filter(name = name, user = request.user)[0]
-            return render(request, 'recipes/create_plan.html', ctx) 
+            return render(request, 'recipes/create_recipe.html', ctx)
         
         # Check to make sure number of days is > 0
         if int(days) <= 0:
             messages.info(request, ("Please enter a positive number of days."))
-            return render(request, 'recipes/create_plan.html', ctx) 
+            return render(request, 'recipes/create_recipe.html', ctx)
         
         # Check to make sure dates and number of days match
         start_date = datetime.strptime(start_date, '%Y-%m-%d')
@@ -1340,12 +1354,12 @@ def create_plan(request):
         calculated_days = (end_date - start_date).days + 1
         if calculated_days != int(days):
             messages.info(request, ("Calculated number of days does not match number of days entered."))
-            return render(request, 'recipes/create_plan.html', ctx) 
+            return render(request, 'recipes/create_recipe.html', ctx)
 
         # Check to make sure number of people is > 0
         if int(people) <= 0:
             messages.info(request, ("Please enter a positive number of people."))
-            return render(request, 'recipes/create_plan.html', ctx) 
+            return render(request, 'recipes/create_recipe.html', ctx)
 
         meals = {
             'breakfast': breakfast,
@@ -1631,7 +1645,16 @@ def index_plans(request):
 
 @login_required
 def save_plan(request, plan_id):
+    error_message = 0
     plan = MealPlan.objects.get(pk = plan_id)
+
+    name = request.POST.get('name')
+    # check to make sure a name exists and return error message if it doesn't
+    if name == "":
+        messages.info(request, ("Please include a name for your plan."))
+        error_message = -2
+    else:
+        plan.name = name
      
     # get all the planned meals that are associated with this plan
     planned_meals = plan.planned_meals.all()
@@ -1667,7 +1690,7 @@ def save_plan(request, plan_id):
         return -1
     
     plan.save()
-    return 0
+    return error_message
 
 
 def save_ingquants(plan):
@@ -1698,6 +1721,8 @@ def update_and_edit_plan(request, plan_id):
         return HttpResponseRedirect(reverse("recipes:display_edit_plan", kwargs= {
         "plan_id": plan_id, 
         }))
+    elif success == -2:
+        return display_edit_plan(request, plan_id) 
     else:
         messages.error(request, 'Please make sure all serving sizes are positive.')
         return display_edit_plan(request, plan_id) 
@@ -1710,6 +1735,8 @@ def update_plan(request, plan_id):
 
     if success == 0:
         return HttpResponseRedirect(reverse("recipes:plan_detail", kwargs= {"plan_id": plan_id,}))
+    elif success == -2:
+        return display_edit_plan(request, plan_id) 
     else:
         messages.error(request, 'Please make sure all serving sizes are positive.')
         return display_edit_plan(request, plan_id) 

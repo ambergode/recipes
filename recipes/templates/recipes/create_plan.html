@@ -3,7 +3,7 @@
 <form name='meal_plan' action='{% url "recipes:create_plan" %}' method='post'>
     {% csrf_token %}
     <div class='fixed-bottom'>
-        <input type="submit" id="create_plan" value='Create Meal Plan' class='btn-sm btn-dark btn-block w-100'>  
+        <input type="submit" id="create_plan" value='Create' class='btn-sm btn-dark btn-block w-100'>  
     </div>
     {% include 'recipes/plan_base_info.html' %}
 </form>

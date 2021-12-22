@@ -1,1 +1,2 @@
 certbot_command: "certbot certonly --webroot -d {{ domain }} --webroot-path /var/www/html -n --agree-tos --email {{ admin_email }}"
+admin_email: james@electronstudio.org
