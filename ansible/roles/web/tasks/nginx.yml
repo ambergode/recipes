@@ -1,16 +1,22 @@
-- name: site available
+- name: Install nginx
+  become: yes
+  apt:
+    pkg:
+    - nginx
+
+- name: "site available {{ site }}"
   become: yes
   register: nginx_avail
   template:
-    src: nginx-site.j2
-    dest: "/etc/nginx/sites-available/{{ subdomain }}"
+    src: "{{ site_template }}"
+    dest: "/etc/nginx/sites-available/{{ site }}"
 
-- name: site enabled
+- name: "site enabled {{ site }}"
   become: yes
   register: nginx_enabled
   file:
-    src: "/etc/nginx/sites-available/{{ subdomain }}"
-    dest: "/etc/nginx/sites-enabled/{{ subdomain }}"
+    src: "/etc/nginx/sites-available/{{ site }}"
+    dest: "/etc/nginx/sites-enabled/{{ site }}"
     state: link
 
 - name: reload nginx

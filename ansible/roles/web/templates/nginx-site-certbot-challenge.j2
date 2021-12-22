@@ -1,0 +1,15 @@
+
+server {
+    listen 80;
+    server_name {{ domain }};
+    
+    # For certbot webroot challenge
+    location / {
+       autoindex off;
+       root  /var/www/html/;
+    }
+
+    location =/ {
+        return 301 https://$host$request_uri;
+    }
+}

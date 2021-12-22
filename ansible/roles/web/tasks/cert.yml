@@ -1,0 +1,21 @@
+- stat:
+    path: /etc/letsencrypt/live/{{ domain }};
+  register: cert_file
+  become: yes
+
+- include: nginx.yml
+  vars:
+    site: "{{ subdomain }}-certbot"
+    site_template: nginx-site-certbot-challenge.j2
+
+- name: Setup cert renewal
+  become: yes
+  cron:
+    name: "cert_renew_{{ srv_name }}"
+    special_time: "daily"
+    job: "{{ certbot_command }} && /usr/sbin/nginx -s reload"
+    
+- name: Create cert
+  become: yes
+  command: "{{ certbot_command }}"
+  when: cert_file.stat.exists == False
