@@ -1,15 +1,15 @@
 - name: Create root dir
   become: yes
   file:
-    path: "{{ ssp_root }}"
+    path: "{{ app_root }}"
     state: directory
   
 - name: Files
   become: yes
-  become_user: "{{ ssp_user }}"
+  become_user: "{{ app_user }}"
   synchronize:
     src: "{{ local_root }}/{{ item }}/"
-    dest: "{{ ssp_root }}/{{ item }}"
+    dest: "{{ app_root }}/{{ item }}"
     archive: no
     recursive: yes
     checksum: yes
@@ -22,17 +22,17 @@
   become: yes
   template:
     src: run_gunicorn.j2
-    dest: "{{ ssp_root }}/run_gunicorn"
-    owner: "{{ ssp_user }}"
-    group: "{{ ssp_group }}"
+    dest: "{{ app_root }}/run_gunicorn"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
     mode: 0755
 
 - name: copy envsh
   become: yes
   template:
     src: env.sh.j2
-    dest: "{{ ssp_root }}/env.sh"
-    owner: "{{ ssp_user }}"
-    group: "{{ ssp_group }}"
+    dest: "{{ app_root }}/env.sh"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
     mode: 0644
 

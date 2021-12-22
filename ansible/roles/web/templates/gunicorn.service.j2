@@ -1,15 +1,15 @@
 [Unit]
-Description=gunicorn daemon for sisepuede site
-Requires=gunicorn-{{ ssp_name }}.socket
+Description=gunicorn daemon for seefood site
+Requires=gunicorn-{{ app_name }}.socket
 After=network.target
 
 [Service]
-PIDFile=/run/gunicorn-{{ ssp_name }}/pid
-User={{ ssp_user }}
-Group={{ ssp_group }}
-RuntimeDirectory=gunicorn-{{ ssp_name }}
-WorkingDirectory=/usr/lib/sisepuede/{{ ssp_env }}
-ExecStart=/usr/lib/sisepuede/{{ ssp_env }}/run_gunicorn
+PIDFile=/run/gunicorn-{{ app_name }}/pid
+User={{ app_user }}
+Group={{ app_group }}
+RuntimeDirectory=gunicorn-{{ app_name }}
+WorkingDirectory={{ app_root }}
+ExecStart={{ app_root }}/run_gunicorn
 ExecReload=/bin/kill -s HUP $MAINPID
 ExecStop=/bin/kill -s TERM $MAINPID
 PrivateTmp=true

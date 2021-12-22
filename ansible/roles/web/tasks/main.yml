@@ -2,12 +2,11 @@
 - include: user.yml
 - include: files.yml
 - include: logging.yml
-- include: packages.yml
 
 - name: pip
   become: yes
   pip:
-    chdir: "{{ ssp_root }}/django"
+    chdir: "{{ app_root }}/django"
     virtualenv: ../pvenv
     virtualenv_python: python3
     requirements: "requirements.txt"
@@ -15,10 +14,10 @@
 
 - name: post deploy
   become: yes
-  become_user: "{{ ssp_user }}"
+  become_user: "{{ app_user }}"
   script: post_deploy.sh
   args:
-    chdir: "{{ ssp_root }}"
+    chdir: "{{ app_root }}"
 
     
 - include: nginx.yml    

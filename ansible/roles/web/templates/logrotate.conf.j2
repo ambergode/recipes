@@ -1,12 +1,12 @@
 
-/var/log/{{ ssp_name }}/sisepuede.log {
+/var/log/{{ app_name }}/app.log {
     rotate 5
     size 5M
     compress
     endscript
 }
 
-/var/log/gunicorn/{{ ssp_name }}-access.log /var/log/gunicorn/{{ ssp_name }}-error.log {
+/var/log/gunicorn/{{ app_name }}-access.log /var/log/gunicorn/{{ app_name }}-error.log {
     rotate 5
     size 1M
     compress

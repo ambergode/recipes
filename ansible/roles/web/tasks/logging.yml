@@ -1,10 +1,10 @@
 - name: Django logging directory
   become: yes
   file:
-    path: "/var/log/{{ ssp_name }}/"
+    path: "/var/log/{{ app_name }}/"
     state: directory
-    owner: "{{ ssp_user }}"
-    group: "{{ ssp_group }}"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
 
 - name: Gunicorn logging dir
   become: yes
@@ -17,7 +17,7 @@
   become: yes
   acl:
     path: /var/log/gunicorn
-    entity: "{{ ssp_user }}"
+    entity: "{{ app_user }}"
     etype: user
     permissions: rwx
     state: present
@@ -27,5 +27,5 @@
   become: yes
   template:
     src: logrotate.conf.j2
-    dest: "/etc/logrotate.d/{{ ssp_name }}"
+    dest: "/etc/logrotate.d/{{ app_name }}"
 

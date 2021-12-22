@@ -2,4 +2,4 @@
 
 . env.sh
 cd django
-gunicorn --pid /run/gunicorn-{{ ssp_name }}/pid --bind unix:/run/gunicorn-{{ ssp_name }}/socket --error-logfile /var/log/gunicorn/{{ ssp_name }}-error.log, --log-file /var/log/gunicorn/{{ ssp_name }}-access.log  --log-level info sisepuede.wsgi 
+gunicorn --pid /run/gunicorn-{{ app_name }}/pid --bind unix:/run/gunicorn-{{ app_name }}/socket --error-logfile /var/log/gunicorn/{{ app_name }}-error.log, --log-file /var/log/gunicorn/{{ app_name }}-access.log  --log-level info tempt.wsgi.application

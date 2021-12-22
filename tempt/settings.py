@@ -157,3 +157,28 @@ LOGIN_REDIRECT_URL = '/recipes/'
 # Email not set up yet.
 # This logs emails to console instead
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Below copied from SiSePuede, written by James Oakley
+LOG_DIR = None
+if "APP_LOGS" in os.environ:
+    LOG_DIR = os.environ["APP_LOGS"]
+
+if LOG_DIR:
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'file': {
+                'level': 'DEBUG',
+                'class': 'logging.FileHandler',
+                'filename': os.path.join(LOG_DIR, 'app.log'),
+            },
+        },
+        'loggers': {
+            'django': {
+                'handlers': ['file'],
+                'level': 'DEBUG',
+                'propagate': True,
+            },
+        },
+    }

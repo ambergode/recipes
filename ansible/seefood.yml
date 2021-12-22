@@ -1,0 +1,10 @@
+- hosts: app_srv
+  vars:
+    - app_name: seefood
+    - app_user: seefood
+    - app_group: seefood
+    - app_root: /usr/lib/seefood
+    - local_root: ../web/deploy
+    - subdomain: seefood
+  roles:
+    - web
