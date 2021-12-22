@@ -1,5 +1,4 @@
 #!/bin/bash
 
 . env.sh
-cd django
-gunicorn --pid /run/gunicorn-{{ app_name }}/pid --bind unix:/run/gunicorn-{{ app_name }}/socket --error-logfile /var/log/gunicorn/{{ app_name }}-error.log, --log-file /var/log/gunicorn/{{ app_name }}-access.log  --log-level info tempt.wsgi.application
+gunicorn --pid /run/gunicorn-{{ app_name }}/pid --bind unix:/run/gunicorn-{{ app_name }}/socket --error-logfile /var/log/gunicorn/{{ app_name }}-error.log, --log-file /var/log/gunicorn/{{ app_name }}-access.log  --log-level info tempt.wsgi

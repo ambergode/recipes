@@ -3,6 +3,12 @@
 - include: files.yml
 - include: logging.yml
 
+- name: install packages
+  become: yes
+  apt:
+    pkg:
+      - virtualenv
+
 - name: pip
   become: yes
   pip:
@@ -18,6 +24,11 @@
   args:
     chdir: "{{ app_root }}"
 
+- name: post deploy as root
+  become: yes
+  script: post_deploy_root.sh
+  args:
+    chdir: "{{ app_root }}"
     
 - include: nginx.yml    
 - include: systemd.yml
