@@ -1271,12 +1271,14 @@ def planning(request):
         current_plan = active_plans[0]
     else:
         try:
-            current_plan = MealPlan.objects.latest('id')
+            current_plan = MealPlan.objects.filter(user=request.user).latest('id')
         except MealPlan.DoesNotExist:
             current_plan = None
 
     plans = MealPlan.objects.filter(user = request.user)
-    plans = plans.exclude(pk = current_plan.id)
+
+    if current_plan != None:
+        plans = plans.exclude(pk = current_plan.id)
 
     paginator = Paginator(plans, 10)
     page_number = request.GET.get('page')
@@ -1314,6 +1316,7 @@ def create_plan_context(request):
 
 @login_required
 def create_plan(request):
+    print('in create plan')
     ctx = create_plan_context(request)
     ctx = {'model': 'mealplan'}
     ctx.update(create_plan_context(request))

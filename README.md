@@ -10,3 +10,6 @@ This is an app to keep track of one's favorite recipes.
 - Allow users to change the order of ingredients in a recipe
 - Allow user to remove items from the current shopping list
 - Change display of cards to use masonry for a more engaging look
+
+
+## TODO:

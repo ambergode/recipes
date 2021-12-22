@@ -51,10 +51,12 @@
         <b>Showing:</b>
         {% include 'recipes/current_servings.html' %}
     </p>
-    <hr>
-    <div id='replaceable-content'>
-        {% include 'recipes/display_ingredient_list.html' %}  
-    </div>
+    {% if ingredients %}
+        <hr>
+        <div id='replaceable-content'>
+            {% include 'recipes/display_ingredient_list.html' %}  
+        </div>
+    {% endif %}
     {% if steps %}
         <hr>
         <div class="step_list">
@@ -76,15 +78,14 @@
             </table>
         </div>   
     {% endif %}  
-    <hr>
     {% if recipe.notes %}  
         <div>
             <h5>Notes:</h5>
             <p>{{ recipe.notes }}</p>
         </div>
     {% endif %}
-    <hr>
     {% if nutrition %}
+        <hr>
         <div class='row'>
             <h5>Nutrition Information:</h5>
             <div class='col-sm-auto'>

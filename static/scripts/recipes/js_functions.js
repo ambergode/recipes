@@ -157,7 +157,6 @@ function update_create_form() {
         model = 'plan'
     }
 
-    const csrftoken = Cookies.get('csrftoken')
     fetch(window.location.pathname, {
         method: 'POST',
         body: JSON.stringify({
