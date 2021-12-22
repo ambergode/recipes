@@ -24,14 +24,24 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = str(os.getenv("SECRET_KEY"))
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+if "APP_ENV" in os.environ:
+    ENVIRONMENT = os.environ["APP_ENV"]
+else:
+    ENVIRONMENT = "dev"
 
-ALLOWED_HOSTS = ['seefood-tmp2.azurewebsites.net', 'localhost']
+if ENVIRONMENT == "dev":
+    DEBUG = True
+else:
+    DEBUG = False
 
+# Security settings
+ALLOWED_HOSTS = ['seefood.electronstudio.org']
+if DEBUG:
+    ALLOWED_HOSTS.append('localhost')
 
 # Application definition
 

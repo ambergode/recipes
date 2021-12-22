@@ -6,11 +6,10 @@
 - name: pip
   become: yes
   pip:
-    chdir: "{{ app_root }}/django"
-    virtualenv: ../pvenv
+    chdir: "{{ app_root }}"
+    virtualenv: pvenv
     virtualenv_python: python3
     requirements: "requirements.txt"
-    extra_args: -c requirements_frozen.txt
 
 - name: post deploy
   become: yes

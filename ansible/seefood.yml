@@ -4,7 +4,7 @@
     - app_user: seefood
     - app_group: seefood
     - app_root: /usr/lib/seefood
-    - local_root: ../web/deploy
+    - local_root: ..
     - subdomain: seefood
   roles:
     - web

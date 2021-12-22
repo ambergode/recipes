@@ -15,8 +15,21 @@
     checksum: yes
     delete: yes
   loop:
-    - django
+    - recipes
+    - tempt
     - static
+    - templates
+
+- name: Copy file with owner and permissions
+  ansible.builtin.copy:
+    src: "{{ local_root }}/{{ item }}"
+    dest: "{{ app_root }}/{{ item }}"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+  loop:
+    - requirements.txt
+    - manage.py
+
 
 - name: copy run_gunicorn
   become: yes
