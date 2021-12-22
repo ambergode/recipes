@@ -1,0 +1,13 @@
+[app_srv]
+charm-quark.electronstudio.org
+
+[static_srv]
+charm-quark.electronstudio.org
+
+[db_srv]
+charm-quark.electronstudio.org
+
+
+
+
+

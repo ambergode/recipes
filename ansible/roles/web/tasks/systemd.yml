@@ -1,0 +1,20 @@
+- name: Template .service file
+  become: yes
+  template:
+    src: gunicorn.service.j2
+    dest: /etc/systemd/system/gunicorn-{{ ssp_name }}.service
+
+- name: Template .socket file
+  become: yes
+  template:
+    src: gunicorn.socket.j2
+    dest: /etc/systemd/system/gunicorn-{{ ssp_name }}.socket
+
+  
+- name: restart service
+  become: yes
+  systemd:
+    daemon_reload: yes
+    enabled: yes
+    state: restarted
+    name: gunicorn-{{ ssp_name }}

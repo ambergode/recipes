@@ -1,0 +1,14 @@
+- name: Create Group
+  become: yes
+  group:
+    name: "{{ ssp_group }}"
+    state: present
+
+- name: Create User
+  become: yes
+  user:
+    name: "{{ ssp_user }}"
+    create_home: no
+    group: "{{ ssp_group }}"
+    shell: "/bin/false"
+    

@@ -1,0 +1,6 @@
+
+- name: Install necessary postgres extras
+  become: yes
+  apt:
+    pkg:
+    - libpq-dev

@@ -1,0 +1,38 @@
+- name: Create root dir
+  become: yes
+  file:
+    path: "{{ ssp_root }}"
+    state: directory
+  
+- name: Files
+  become: yes
+  become_user: "{{ ssp_user }}"
+  synchronize:
+    src: "{{ local_root }}/{{ item }}/"
+    dest: "{{ ssp_root }}/{{ item }}"
+    archive: no
+    recursive: yes
+    checksum: yes
+    delete: yes
+  loop:
+    - django
+    - static
+
+- name: copy run_gunicorn
+  become: yes
+  template:
+    src: run_gunicorn.j2
+    dest: "{{ ssp_root }}/run_gunicorn"
+    owner: "{{ ssp_user }}"
+    group: "{{ ssp_group }}"
+    mode: 0755
+
+- name: copy envsh
+  become: yes
+  template:
+    src: env.sh.j2
+    dest: "{{ ssp_root }}/env.sh"
+    owner: "{{ ssp_user }}"
+    group: "{{ ssp_group }}"
+    mode: 0644
+

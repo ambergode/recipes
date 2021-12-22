@@ -1,0 +1,25 @@
+- name: site available
+  become: yes
+  register: nginx_avail
+  template:
+    src: nginx-site.j2
+    dest: "/etc/nginx/sites-available/{{ subdomain }}"
+
+- name: site enabled
+  become: yes
+  register: nginx_enabled
+  file:
+    src: "/etc/nginx/sites-available/{{ subdomain }}"
+    dest: "/etc/nginx/sites-enabled/{{ subdomain }}"
+    state: link
+
+- name: reload nginx
+  become: yes
+  command: nginx -s reload
+  when: nginx_avail.changed or nginx_enabled.changed
+
+- name: Ensure nginx running
+  systemd:
+    state: started
+    enabled: true
+    name: nginx    

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+. env.sh
+cd django
+gunicorn --pid /run/gunicorn-{{ ssp_name }}/pid --bind unix:/run/gunicorn-{{ ssp_name }}/socket --error-logfile /var/log/gunicorn/{{ ssp_name }}-error.log, --log-file /var/log/gunicorn/{{ ssp_name }}-access.log  --log-level info sisepuede.wsgi 
