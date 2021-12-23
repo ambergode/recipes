@@ -144,22 +144,26 @@
                 </table>
             </div>
             <div class='col'>
-                <h6>*Items not included</h6>
-                <ul>
-                    {% for item in uncounted %}
-                        <li>
-                            {{ item }}
-                        </li>
-                    {% endfor %}
-                </ul>
-                <h6>*Unverified ingredients</h6>
-                <ul>
-                    {% for item in unverified %}
-                        <li>
-                            {{ item }}
-                        </li>
-                    {% endfor %}
-                </ul>
+                {% if uncounted %}
+                    <h6>Items not included:</h6>
+                    <ul>
+                        {% for item in uncounted %}
+                            <li>
+                                {{ item }}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                {% if unverified %}
+                    <h6>Original ingredients:</h6>
+                    <ul>
+                        {% for item in unverified %}
+                            <li>
+                                {{ item }}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
             </div>
         </div>
     {% endif %}
