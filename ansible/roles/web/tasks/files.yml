@@ -3,6 +3,7 @@
   file:
     path: "{{ app_root }}"
     state: directory
+    mode: 0750
 
 - name: Create pvenv dir
   become: yes
@@ -17,6 +18,7 @@
     state: directory
     owner: "{{ app_user }}"
     group: "{{ app_group }}"
+    mode: 0750
   loop:
     - data
     - media
