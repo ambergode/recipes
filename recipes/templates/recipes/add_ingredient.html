@@ -103,7 +103,7 @@
                             {% if component.0.ingredient.calories %}
                                 <input type="number" name="calories_{{ ing_id }}" id='calories_{{ component.0.id }}' value="{{ component.0.ingredient.calories|floatformat:'0' }}" step='.01' class='num-input'>
                             {% elif component.0.ingredient %}
-                                <input type="number" name="calories_{{ ing_id }}" id='calories_{{ component.0.id }}' value="0" step='.01' class='num-input'> &nbsp;&nbsp;&nbsp;g
+                                <input type="number" name="calories_{{ ing_id }}" id='calories_{{ component.0.id }}' value="0" step='.01' class='num-input'>
                             {% else %}
                                 <input type="number" name="calories_new" value="0" step='.01' class='num-input'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                             {% endif %}
