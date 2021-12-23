@@ -4,6 +4,7 @@
     - app_user: seefood
     - app_group: seefood
     - app_root: /usr/lib/seefood
+    - app_data_root: /var/lib/seefood
     - local_root: ..
     - subdomain: seefood
     - domain: seefood.electronstudio.org

@@ -2,6 +2,8 @@ server {
     listen 80;
     listen 443 ssl;
     server_name {{ subdomain }}.electronstudio.org;
+
+    client_max_body_size 10M;
     
     ssl_certificate /etc/letsencrypt/live/{{ subdomain }}.electronstudio.org/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/{{ subdomain }}.electronstudio.org/privkey.pem;
@@ -15,6 +17,11 @@ server {
     location /static/ {
        autoindex off;
        root  {{ app_root }}/;
+    }
+
+    location /media/ {
+       autoindex off;
+       root  {{ app_data_root }}/;
     }
 
     location / {

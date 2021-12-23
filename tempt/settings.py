@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 from django.contrib.messages import constants as messages
+import sys
 
 load_dotenv()
 
@@ -101,10 +102,15 @@ WSGI_APPLICATION = 'tempt.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
+if ENVIRONMENT == "dev":
+    DATABASE_DIR = BASE_DIR / "data"
+else:
+    DATABASE_DIR = '/var/lib/seefood/data'
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'data/db.sqlite3',
+        'NAME': os.path.join(DATABASE_DIR, 'db.sqlite3'),
     }
 }
 
@@ -153,7 +159,11 @@ STATICFILES_DIRS = (
 STATIC_URL = '/static/'
 
 # For storing uploaded images
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+if ENVIRONMENT == "dev":
+    MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+else:
+    MEDIA_ROOT = '/var/lib/seefood/media'
+
 MEDIA_URL = "media/"
 
 # Default primary key field type

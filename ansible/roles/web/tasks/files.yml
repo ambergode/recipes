@@ -4,17 +4,23 @@
     path: "{{ app_root }}"
     state: directory
 
-- name: Create pvenv, data and media dirs
+- name: Create pvenv dir
   become: yes
   file:
-    path: "{{ app_root }}/{{ item }}"
+    path: "{{ app_root }}/pvenv"
+    state: directory
+
+- name: Create data and media dirs
+  become: yes
+  file:
+    path: "{{ app_data_root }}/{{ item }}"
     state: directory
     owner: "{{ app_user }}"
     group: "{{ app_group }}"
   loop:
-    - pvenv
     - data
     - media
+    - media/recipes
   
 - name: Files
   become: yes
