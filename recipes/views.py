@@ -623,6 +623,7 @@ def add_ingredient(request, ingredient_id = None, source = 'recipe'):
         ing.save()
         return ing
 
+    print('in add ingredient')
     # identify the recipe
     recipe_id = request.POST.get('recipe_id')
     model = source
@@ -1014,9 +1015,11 @@ def record_edit(request, object_id, model):
     
     if model == ShoppingList:
         destination = "recipes:update_shopping_list"
+        model_name = "shopping"
     # just recipes
     else: 
         destination = "recipes:display_edit_recipe"
+        model_name = "recipe"
         recipe = personalize_if_user_not_owner(requesting_user, recipe)
         # if there is an error and the recipe shows up more than once in the database
         if recipe == -1:
@@ -1093,16 +1096,18 @@ def record_edit(request, object_id, model):
 
         recipe.save()
 
-    # if request.POST.get('add_ingredient') != None:
-    #     return add_ingredient(request, source = model_name)
+    if request.POST.get('add_ingredient') != None:
+        return add_ingredient(request, source = model_name)
     
-    # if request.POST.get('save_ingredient') != None:
-    #     ingredient_id = request.POST.get('save_ingredient')[16:]
-    #     return add_ingredient(request, ingredient_id, source = model_name)
+    if request.POST.get('save_ingredient') != None:
+        ingredient_id = request.POST.get('save_ingredient')[16:]
+        return add_ingredient(request, ingredient_id, source = model_name)
     
-    # if request.POST.get('delete_ingredient') != None:
-    #     ingredient_id = request.POST.get('delete_ingredient')[18:]
-    #     return delete(request, model, recipe.id, ingredient_id)
+    if request.POST.get('delete_ingredient') != None:
+        ingredient_id = request.POST.get('delete_ingredient')[18:]
+        return delete(request, model, recipe.id, ingredient_id)
+
+
     if success:
         if model == Recipe:
             return HttpResponseRedirect(reverse("recipes:detail", args=(recipe.id,)))
