@@ -1057,6 +1057,50 @@ $(function(){ // this will be called when the DOM is ready
         scheduled_function = setTimeout(fetch_call, 500)
     })
 
+
+    // set listeners to record changes to numbers in recipes
+    const num_inputs = document.querySelectorAll('.num-input')
+    num_inputs.forEach(function(num) {
+            if (num.name.slice(0,8) === "quantity") {
+            num.addEventListener('change', () => {
+                fetch('record_num_change/', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        ingquant_id: num.name.slice(9,),  
+                        new_value: num.value
+                    }),
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest",
+                        'X-CSRFToken': csrftoken
+                    },
+                    credentials: 'same-origin'
+                })
+            })
+        }
+    })
+
+    
+    // set listeners for changes in select lists (units) in recipes
+    const unit_inputs = document.querySelectorAll('select')
+    unit_inputs.forEach(function(select) {
+        if (select.name.slice(-12,) === "-choose_unit") {
+            select.addEventListener('change', () => {
+                fetch('record_unit_change/', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        ingquant_id: select.name.slice(5,9),  
+                        new_unit: select.value
+                    }),
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest",
+                        'X-CSRFToken': csrftoken
+                    },
+                    credentials: 'same-origin'
+                })
+            })
+        }
+    })
+
     
     // listen for changes to radio buttons for search
     radios = document.querySelectorAll('input[name="group"]')

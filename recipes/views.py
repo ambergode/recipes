@@ -861,6 +861,7 @@ def update_ingredients(request):
         if model == Recipe:
             recipe = personalize_if_user_not_owner(requesting_user, recipe)
 
+
         # complete the requested action
         if action == 'rem' and recipe != -1:
             ctx = {
@@ -1007,6 +1008,58 @@ def display_edit(request, object_id, model_name):
         return render(request, 'recipes/edit_shopping_list.html', context = ctx)
 
 
+def save_components(request, recipe):
+    added_components = recipe.get_ingquants()   
+    components_ingredients = []
+    for component in added_components:
+        components_ingredients.append(component.ingredient.id)
+        print('quantity_' + str(component.id))
+        new_quantity = request.POST.get('quantity_' + str(component.id), None)
+
+        try: 
+            if float(new_quantity) <= 0:
+                success = False
+                error_message = "Please enter a positive quantity for each ingredient."
+            component.quantity = new_quantity
+        except ValueError:
+            success = False
+            error_message = "Please enter a numerical quantity for each ingredient."
+
+        new_unit = request.POST.get('name_' + str(component.id) +"-choose_unit", None)
+        if new_unit != None:
+            component.unit = new_unit
+        component.save()
+    return
+
+
+def record_num_change(request, recipe_id):
+    data = json.loads(request.body)
+    ingquant_id = data.get('ingquant_id')
+    new_value = data.get('new_value')
+    ingquant = IngQuant.objects.get(pk = ingquant_id)
+    ingquant.quantity = new_value
+    ingquant.save()
+
+    data_dict = {
+        'success': True,
+    }
+    return JsonResponse(data=data_dict)
+
+
+def record_unit_change(request, recipe_id):
+    data = json.loads(request.body)
+    ingquant_id = data.get('ingquant_id')
+    new_unit = data.get('new_unit')
+    ingquant = IngQuant.objects.get(pk = ingquant_id)
+    ingquant.unit = new_unit
+    ingquant.save()
+
+    data_dict = {
+        'success': True,
+    }
+    return JsonResponse(data=data_dict)
+
+
 @login_required
 def record_edit(request, object_id, model):
     success = True
@@ -1076,26 +1129,7 @@ def record_edit(request, object_id, model):
         recipe.description = request.POST.get('description')
         recipe.user = request.user
                 
-        added_components = recipe.get_ingquants()
-        components_ingredients = []
-        for component in added_components:
-            components_ingredients.append(component.ingredient.id)
-            new_quantity = request.POST.get('quantity_' + str(component.id), None)
-
-            try: 
-                if float(new_quantity) <= 0:
-                    success = False
-                    error_message = "Please enter a positive quantity for each ingredient."
-                component.quantity = new_quantity
-            except ValueError:
-                success = False
-                error_message = "Please enter a numerical quantity for each ingredient."
-
-            new_unit = request.POST.get('name_' + str(component.id) +"-choose_unit", None)
-            if new_unit != None:
-                component.unit = new_unit
-            component.save()
-            # print("components", component, component.quantity, component.unit)
+        save_components(request, recipe)
 
         recipe.save()
 
