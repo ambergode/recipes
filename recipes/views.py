@@ -268,7 +268,24 @@ def delete(request, model, recipe_id, ingredient_id = None):
 
 def cancel(request):
     valuenext = request.POST.get('next')
-    return HttpResponseRedirect(valuenext)
+    if valuenext:
+        # this means the recipe/list was already saved
+        # so just redirect to where we were before
+        return HttpResponseRedirect(valuenext)
+    else:
+        # delete the thing just created
+        model = request.POST.get('model')
+        item_id = request.POST.get('item_id')
+        print("model + item id", model, item_id)
+
+        if model == 'recipe':
+            item = Recipe.objects.get(pk = item_id)
+            item.delete()
+            return index(request, model_name = model) 
+        else:
+            item = ShoppingList.objects.get(pk = item_id)
+            item.delete()
+            return shopping(request)
 
 
 def update_servings(request):
@@ -545,9 +562,10 @@ def create(request, creation):
             
             # Check to make sure name is unique
             if model.objects.filter(name = new_recipe, user = request.user).count() > 0:
+                messages.error(request, "You already have something called " + new_recipe + ". Please use a unique name ")
                 ctx = {
-                    "error_message": "You already have something called " + new_recipe + ". Please use a unique name ",
-                    "recipe": model.objects.filter(name = new_recipe, user = request.user)[0]
+                    "recipe": model.objects.filter(name = new_recipe, user = request.user)[0],
+                    'model': 'recipe'
                 }
                 return render(request, 'recipes/create_recipe.html', ctx) 
                 

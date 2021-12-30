@@ -17,6 +17,8 @@
         {% if edit %}
             <form action="{% url 'recipes:cancel' %}" method='post'>
                 {% csrf_token %}
+                <input type='hidden' name='model' value='shopping_list'>
+                <input type='hidden' name='item_id' value='{{ list_id }}'>
                 <input type='hidden' name='next' value='{{request.GET.next}}'>
                 <input type='submit' name='cancel' value='Cancel' class='btn-sm btn-dark m-1'>
             </form>
