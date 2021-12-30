@@ -118,15 +118,26 @@ function reload_partial_page(html_from_view, reload_div, listeners = undefined) 
 function add_ingredient(evt) {
     evt.preventDefault();
     
-
     let ingredient_id = document.getElementById('ingredient_name').value    
     let model = document.querySelector('#model').value
+
+    const num_inputs = document.querySelectorAll('.num-input')
+    let old_ings = []
+     num_inputs.forEach(function(num) {
+         if (num.name.slice(0,8) === "quantity") {
+            let ing_id = num.name.slice(9,)
+            let unit = document.getElementById("id_name_" + ing_id + "-choose_unit").value
+            let ing_info = [ing_id, num.value, unit]
+            old_ings.push(ing_info)
+         }
+    })
 
     fetch('add_ing_to_list/', {
         method: 'POST',
         body: JSON.stringify({
             ingredient_id: ingredient_id,  
             model: model,  
+            old_ings: old_ings,
         }),
         headers: {
             "X-Requested-With": "XMLHttpRequest",

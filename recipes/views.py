@@ -1093,6 +1093,7 @@ def record_edit(request, object_id, model):
             if new_unit != None:
                 component.unit = new_unit
             component.save()
+            # print("components", component, component.quantity, component.unit)
 
         recipe.save()
 
@@ -1153,6 +1154,20 @@ def add_ing_to_list(request, recipe_id):
     elif model == ShoppingList:
         ingquants = IngQuant.objects.filter(shopping_list = recipe)
 
+
+    # save the quantities and units as listed on the page
+    ingredients = data.get('old_ings')
+    for ingredient in ingredients:
+        ing_id = ingredient[0]
+        ing_quant = ingredient[1]
+        ing_unit = ingredient[2]
+        ingquant = IngQuant.objects.filter(id = ing_id, recipe = recipe_id)[0]
+        ingquant.quantity = ing_quant
+        ingquant.unit = ing_unit
+        ingquant.save()
+
+
+    # compile a list of ingredients as listed in the database
     components = []
     for ingquant in ingquants:
         components.append(ingquant.ingredient)
