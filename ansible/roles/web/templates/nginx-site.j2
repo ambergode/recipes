@@ -17,6 +17,7 @@ server {
     location /static/ {
        autoindex off;
        root  {{ app_root }}/;
+       add_header Cache-Control "no-cache";
     }
 
     location /media/ {
