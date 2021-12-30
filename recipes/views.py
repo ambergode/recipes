@@ -1226,7 +1226,12 @@ def add_ing_to_list(request, recipe_id):
     else:
         messages.info(request, f"'{added_ingredient.ingredient[0].upper()}{added_ingredient.ingredient[1:]}' is already in the ingredients list.")
     
-    return ajax(request, 'recipes/added_ingredients_list.html', {'components': get_components(recipe)})
+    ctx = {
+        'components': get_components(recipe),
+        'unit_choices': UNIT_CHOICES,
+        'category_choices': CATEGORY_CHOICES,
+    }
+    return ajax(request, 'recipes/added_ingredients_list.html', ctx)
 
 
 @login_required

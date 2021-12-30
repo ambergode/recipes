@@ -21,13 +21,13 @@
                             {% else %}
                                 <select name='category_new'>
                             {% endif %}
-                                {% for option in category_choices %}
-                                    {% ifequal component.0.ingredient.category option.1 %}
-                                        <option value='{{ option.0 }}' selected>{{ option.1 }}</option>
-                                    {% else %}
-                                        <option value='{{ option.0 }}'>{{ option.1 }}</option>
-                                    {% endifequal %}
-                                {% endfor %}
+                            {% for option in category_choices %}
+                                {% ifequal component.0.ingredient.category option.1 %}
+                                    <option value='{{ option.0 }}' selected>{{ option.1 }}</option>
+                                {% else %}
+                                    <option value='{{ option.0 }}'>{{ option.1 }}</option>
+                                {% endifequal %}
+                            {% endfor %}
                             </select>
                         </td>
                     </tr>
