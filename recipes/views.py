@@ -1043,6 +1043,8 @@ def record_edit(request, object_id, model):
         if photo_form.is_valid():
             if photo_form.cleaned_data.get('photo') != None:
                 recipe.photo = photo_form.cleaned_data.get('photo')
+        else:
+            messages.error(request,'File size cannot exceed 5MB.')
         
         # record steps
         num_steps = int(request.POST.get("num_steps"))

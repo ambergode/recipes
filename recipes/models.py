@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from tempt.settings import MEDIA_URL
 
 from .convert_units import convert_units
+from .validators import validate_file_size
 
 
 VOLUME = ['ml', 'liter', 'tsp', 'tbsp', 'cup', 'floz', 'pint', 'quart', 'gallon']
@@ -168,7 +169,7 @@ class Recipe(CommonInfo):
     prep_time = models.IntegerField(null = True, blank = True)
     cook_time = models.IntegerField(null = True, blank = True)
     servings = models.IntegerField(default = 4)
-    photo = models.ImageField(upload_to = "recipes/", null = True, blank = True)
+    photo = models.ImageField(upload_to = "recipes/", null = True, blank = True, validators=[validate_file_size])
     notes = models.CharField(max_length = 2048, null = True, blank = True)
     # as written by user
     author = models.CharField(max_length = 150, default = "Anonymous")
