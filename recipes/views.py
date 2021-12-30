@@ -419,11 +419,11 @@ def index(request, model_name='recipe'):
 
     ctx = {}
 
-    paginator = Paginator(recipe_list, 10)
+    paginator = Paginator(recipe_list, 12)
     if model_name == 'shopping_list':
         ctx['shopping_lists'] = query_shopping_lists(request)
         ctx['model'] = 'list'
-        paginator = Paginator(query_shopping_lists(request), 10)
+        paginator = Paginator(query_shopping_lists(request), 12)
     elif model_name == 'mealplan':
         ctx['mealplan_list'] = recipe_list
         ctx['model'] = 'mealplan'
@@ -1359,7 +1359,7 @@ def planning(request):
     if current_plan != None:
         plans = plans.exclude(pk = current_plan.id)
 
-    paginator = Paginator(plans, 10)
+    paginator = Paginator(plans, 12)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
