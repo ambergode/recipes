@@ -1109,8 +1109,9 @@ $(function(){ // this will be called when the DOM is ready
             if (evt.keyCode === 13) {
                 evt.preventDefault()
                 const add_to_recipe = document.querySelector('#add_to_recipe')
-                console.log(add_to_recipe)
-                add_to_recipe.click()
+                if (add_to_recipe != null){
+                    add_to_recipe.click()
+                }
             }
         })
     }
