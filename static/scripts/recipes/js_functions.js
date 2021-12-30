@@ -1079,7 +1079,7 @@ $(function(){ // this will be called when the DOM is ready
         }
     })
 
-    
+
     // set listeners for changes in select lists (units) in recipes
     const unit_inputs = document.querySelectorAll('select')
     unit_inputs.forEach(function(select) {
@@ -1102,6 +1102,20 @@ $(function(){ // this will be called when the DOM is ready
     })
 
     
+    // listen for user to submit an ingredient search
+    const ing_search = document.querySelector('input[name="ingredient_search"')
+    if (ing_search != null) {
+        ing_search.addEventListener('keydown', (evt) => {
+            if (evt.keyCode === 13) {
+                evt.preventDefault()
+                const add_to_recipe = document.querySelector('#add_to_recipe')
+                console.log(add_to_recipe)
+                add_to_recipe.click()
+            }
+        })
+    }
+
+
     // listen for changes to radio buttons for search
     radios = document.querySelectorAll('input[name="group"]')
     radios.forEach(radio => {
