@@ -11,7 +11,7 @@
 - name: Setup cert renewal
   become: yes
   cron:
-    name: "cert_renew_{{ srv_name }}"
+    name: "cert_renew_{{ app_name }}"
     special_time: "daily"
     job: "{{ certbot_command }} && /usr/sbin/nginx -s reload"
     
