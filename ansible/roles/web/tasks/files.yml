@@ -33,7 +33,7 @@
     - recipes
     - tempt
     - static
-    - django_templates
+    - djangotemplates
 
 - name: Copy individual files
   become: yes

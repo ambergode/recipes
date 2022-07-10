@@ -81,7 +81,7 @@ ROOT_URLCONF = 'tempt.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'django_templates/')],
+        'DIRS': [os.path.join(BASE_DIR, 'djangotemplates/')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
