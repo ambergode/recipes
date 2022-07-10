@@ -11,7 +11,11 @@
 - name: Setup cert renewal
   become: yes
   cron:
+<<<<<<< HEAD
     name: "cert_renew_{{ subdomain }}"
+=======
+    name: "cert_renew_{{ app_name }}"
+>>>>>>> 1a898f4504f8022f2e3dba3b10e3766d2c0c6a85
     special_time: "daily"
     job: "{{ certbot_command }} && /usr/sbin/nginx -s reload"
     

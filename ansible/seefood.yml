@@ -8,5 +8,6 @@
     - local_root: ..
     - subdomain: seefood
     - domain: seefood.electronstudio.org
+    - admin_email: james@electronstudio.org
   roles:
     - web
